@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/HdrHistogram/hdrhistogram-go"
+	"github.com/schollz/progressbar/v3"
 )
 
 type requestResult struct {
@@ -17,11 +18,42 @@ type requestResult struct {
 func Run(url string, duration time.Duration, connections int) error {
 	fmt.Println("Run load test against:", url, "for duration:", duration)
 
-	startTime := time.Now()
+	bar := progressbar.NewOptions(int(duration.Seconds()),
+		progressbar.OptionSetDescription("Running test..."),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionShowElapsedTimeOnFinish(),
+		progressbar.OptionSetPredictTime(false),
+		progressbar.OptionClearOnFinish(),
+	)
 
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	done := make(chan bool)
 	ch := make(chan []requestResult)
 
 	var wg sync.WaitGroup
+
+	var (
+		elapsed int
+		total   int = int(duration.Seconds())
+	)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				bar.Add(1)
+				elapsed += 1
+				bar.Describe(fmt.Sprintf("Running test (%d/%ds)", elapsed, total))
+			case <-done:
+				bar.Finish()
+				return
+			}
+		}
+	}()
+
+	startTime := time.Now()
 
 	for i := range connections {
 		wg.Go(func() {
@@ -39,8 +71,11 @@ func Run(url string, duration time.Duration, connections int) error {
 	})
 
 	wg.Wait()
+	done <- true
 
 	close(ch)
+
+	fmt.Println("\nLoad test complete. Processing results...")
 
 	histogram := hdrhistogram.New(1, 60000, 3)
 
