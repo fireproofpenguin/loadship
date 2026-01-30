@@ -1,0 +1,28 @@
+# Binaries
+loadship
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.txt
+
+# Go workspace
+/vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Results
+loadship-results/
+*.json
+*.html
+
+# GoReleaser
+dist/
