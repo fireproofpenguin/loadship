@@ -92,6 +92,10 @@ func Run(url string, duration time.Duration, connections int) error {
 	fmt.Println("Successful Requests:", successfulRequests)
 	fmt.Println("Failed Requests:", failedRequests)
 	fmt.Printf("Requests per Second: %.2f\n", rps)
+	if successfulRequests == 0 {
+		fmt.Println("------------- No successful requests -------------")
+		fmt.Println("--- Be careful using the latency metrics below ---")
+	}
 	fmt.Printf("Latency Min/Avg/Max: %d / %.2f / %d ms\n", minLatency.Milliseconds(), averageLatency, maxLatency.Milliseconds())
 	fmt.Printf("Latency p50/p90/p95/p99: %d / %d / %d / %d ms\n", p50, p90, p95, p99)
 
