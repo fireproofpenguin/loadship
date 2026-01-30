@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - name: Verify dependencies
+        run: go mod verify
+      
+      - name: Build
+        run: go build -v ./...
+      
+      - name: Run go vet
+        run: go vet ./...
+      
+      - name: Run tests (when they exist)
+        run: go test -v ./...
