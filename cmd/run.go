@@ -8,7 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var duration string
+var (
+	duration    string
+	connections int
+)
 
 var runCmd = &cobra.Command{
 	Use:   "run <target-url>",
@@ -26,7 +29,12 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		err := load.Run(args[0], dur)
+		if connections <= 0 {
+			fmt.Println("Must have at least one connection")
+			return
+		}
+
+		err := load.Run(args[0], dur, connections)
 
 		if err != nil {
 			fmt.Println("Error running load test:", err)
@@ -38,4 +46,5 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 
 	runCmd.Flags().StringVarP(&duration, "duration", "d", "30s", "Duration of the load test (e.g., 10s, 1m)")
+	runCmd.Flags().IntVarP(&connections, "connections", "c", 10, "Number of concurrent connections to use during the load test")
 }

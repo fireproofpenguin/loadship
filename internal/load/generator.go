@@ -2,62 +2,80 @@ package load
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"slices"
+	"sync"
 	"time"
 )
 
-func Run(url string, duration time.Duration) error {
-	fmt.Println("Run load test against:", url, "for duration:", duration)
+type requestResult struct {
+	latency    time.Duration
+	err        error
+	statusCode int
+}
 
-	defaultTimeout := 30 * time.Second
+func Run(url string, duration time.Duration, connections int) error {
+	fmt.Println("Run load test against:", url, "for duration:", duration)
 
 	startTime := time.Now()
 
-	totalRequests := 0
-	successfulRequests := 0
-	failedRequests := 0
-	latencies := []time.Duration{}
+	ch := make(chan []requestResult)
 
-	client := &http.Client{
-		Timeout: defaultTimeout,
+	var wg sync.WaitGroup
+
+	for i := range connections {
+		wg.Go(func() {
+			RequestLoop(i, url, startTime, duration, ch)
+		})
 	}
 
-	for time.Since(startTime) < duration {
-		reqStart := time.Now()
-		resp, err := client.Get(url)
+	var results []requestResult
 
-		totalRequests += 1
-
-		if err != nil {
-			failedRequests += 1
-			continue
+	wg.Go(func() {
+		for range connections {
+			worker_results := <-ch
+			results = append(results, worker_results...)
 		}
+	})
 
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
+	wg.Wait()
 
-		latency := time.Since(reqStart)
-		latencies = append(latencies, latency)
+	close(ch)
 
-		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			successfulRequests += 1
-		} else {
-			failedRequests += 1
-		}
-	}
-
+	totalRequests := len(results)
 	rps := float64(totalRequests) / duration.Seconds()
-	var totalLatency float64
-	for _, latency := range latencies {
-		totalLatency += float64(latency.Milliseconds())
-	}
-	averageLatency := totalLatency / float64(len(latencies))
+	var (
+		successfulRequests int
+		failedRequests     int
+		totalLatency       float64
+	)
+
 	var minLatency, maxLatency time.Duration
-	if len(latencies) > 0 {
-		minLatency = slices.Min(latencies)
-		maxLatency = slices.Max(latencies)
+
+	if len(results) == 0 {
+		fmt.Println("No requests were made.")
+		return nil
+	}
+
+	minLatency = results[0].latency
+	maxLatency = results[0].latency
+
+	for _, result := range results {
+		if result.err == nil && result.statusCode >= 200 && result.statusCode < 300 {
+			successfulRequests++
+			totalLatency += float64(result.latency.Milliseconds())
+			if result.latency < minLatency {
+				minLatency = result.latency
+			}
+			if result.latency > maxLatency {
+				maxLatency = result.latency
+			}
+		} else {
+			failedRequests++
+		}
+	}
+
+	var averageLatency float64
+	if successfulRequests > 0 {
+		averageLatency = totalLatency / float64(successfulRequests)
 	}
 
 	fmt.Println("Total Requests:", totalRequests)
