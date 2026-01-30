@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/HdrHistogram/hdrhistogram-go"
 )
 
 type requestResult struct {
@@ -40,6 +42,8 @@ func Run(url string, duration time.Duration, connections int) error {
 
 	close(ch)
 
+	histogram := hdrhistogram.New(1, 60000, 3)
+
 	totalRequests := len(results)
 	rps := float64(totalRequests) / duration.Seconds()
 	var (
@@ -62,6 +66,7 @@ func Run(url string, duration time.Duration, connections int) error {
 		if result.err == nil && result.statusCode >= 200 && result.statusCode < 300 {
 			successfulRequests++
 			totalLatency += float64(result.latency.Milliseconds())
+			histogram.RecordValue(result.latency.Milliseconds())
 			if result.latency < minLatency {
 				minLatency = result.latency
 			}
@@ -78,11 +83,17 @@ func Run(url string, duration time.Duration, connections int) error {
 		averageLatency = totalLatency / float64(successfulRequests)
 	}
 
+	p50 := histogram.ValueAtQuantile(50.0)
+	p90 := histogram.ValueAtQuantile(90.0)
+	p95 := histogram.ValueAtQuantile(95.0)
+	p99 := histogram.ValueAtQuantile(99.0)
+
 	fmt.Println("Total Requests:", totalRequests)
 	fmt.Println("Successful Requests:", successfulRequests)
 	fmt.Println("Failed Requests:", failedRequests)
 	fmt.Printf("Requests per Second: %.2f\n", rps)
 	fmt.Printf("Latency Min/Avg/Max: %d / %.2f / %d ms\n", minLatency.Milliseconds(), averageLatency, maxLatency.Milliseconds())
+	fmt.Printf("Latency p50/p90/p95/p99: %d / %d / %d / %d ms\n", p50, p90, p95, p99)
 
 	return nil
 }
