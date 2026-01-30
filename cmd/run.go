@@ -17,6 +17,7 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println("Please provide a target URL")
+			return
 		}
 
 		dur, durErr := time.ParseDuration(duration)
