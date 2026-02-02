@@ -36,9 +36,9 @@ func (m MetricChange) ChangeString() string {
 	indicator := ""
 	if math.Abs(m.Percent) > 5 {
 		if m.Better {
-			indicator = "✅"
+			indicator = "✓"
 		} else {
-			indicator = "❌"
+			indicator = "✗"
 		}
 	}
 
