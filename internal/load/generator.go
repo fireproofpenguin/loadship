@@ -9,7 +9,7 @@ import (
 type HTTPStats struct {
 	Timestamp  time.Time     `json:"timestamp"`
 	Latency    time.Duration `json:"latency"`
-	Err        error         `json:"error,omitempty"`
+	ErrorType  string        `json:"error_type,omitempty"`
 	StatusCode int           `json:"status_code"`
 }
 

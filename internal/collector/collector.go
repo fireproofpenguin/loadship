@@ -87,7 +87,7 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 	var latencyInitialised bool
 
 	for _, result := range httpStats {
-		if result.Err == nil && result.StatusCode >= 200 && result.StatusCode < 300 {
+		if result.ErrorType == "" && result.StatusCode >= 200 && result.StatusCode < 300 {
 			successfulRequests++
 			totalLatency += float64(result.Latency.Milliseconds())
 			histogram.RecordValue(result.Latency.Milliseconds())
