@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/fireproofpenguin/loadship/compare/v0.1.0...v0.2.0) (2026-02-02)
+
+
+### Features
+
+* basic-docker-stats ([#7](https://github.com/fireproofpenguin/loadship/issues/7)) ([f8bcc5d](https://github.com/fireproofpenguin/loadship/commit/f8bcc5db3730993dab8d2ae963d999ddf226f7ce))
+
 ## [0.1.0](https://github.com/fireproofpenguin/loadship/compare/v0.0.1...v0.1.0) (2026-01-30)
 
 
