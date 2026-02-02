@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/docker/go-sdk/client"
 	mobyContainer "github.com/moby/moby/api/types/container"
@@ -16,7 +15,6 @@ type DockerStats struct {
 }
 
 func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {
-	log.SetPrefix("RunDockerMonitor")
 	var results []DockerStats
 
 	cli, err := client.New(context.Background())
