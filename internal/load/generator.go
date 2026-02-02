@@ -7,9 +7,10 @@ import (
 )
 
 type HTTPStats struct {
-	Latency    time.Duration
-	Err        error
-	StatusCode int
+	Timestamp  time.Time     `json:"timestamp"`
+	Latency    time.Duration `json:"latency"`
+	ErrorType  string        `json:"error_type,omitempty"`
+	StatusCode int           `json:"status_code"`
 }
 
 func RunHTTPTest(ctx context.Context, url string, connections int) []HTTPStats {

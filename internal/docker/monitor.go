@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/docker/go-sdk/client"
 	mobyContainer "github.com/moby/moby/api/types/container"
@@ -11,7 +12,8 @@ import (
 )
 
 type DockerStats struct {
-	MemoryUsageMB float64
+	Timestamp     time.Time `json:"timestamp"`
+	MemoryUsageMB float64   `json:"memory_usage_mb"`
 }
 
 func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {
@@ -67,6 +69,7 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 		memoryMB := float64(workingSet) / 1024 / 1024
 
 		stat := DockerStats{
+			Timestamp:     response.Read,
 			MemoryUsageMB: memoryMB,
 		}
 		results = append(results, stat)

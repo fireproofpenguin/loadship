@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -18,6 +20,7 @@ var (
 	duration      string
 	connections   int
 	containerName string
+	jsonFile      string
 )
 
 var runCmd = &cobra.Command{
@@ -30,8 +33,6 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		url := args[0]
-
 		dur, durErr := time.ParseDuration(duration)
 		if durErr != nil {
 			fmt.Println("Invalid duration:", durErr)
@@ -41,6 +42,17 @@ var runCmd = &cobra.Command{
 		if connections <= 0 {
 			fmt.Println("Must have at least one connection")
 			return
+		}
+
+		url := args[0]
+		testStart := time.Now()
+
+		config := collector.TestConfig{
+			URL:           url,
+			Timestamp:     testStart,
+			Duration:      dur,
+			Connections:   connections,
+			ContainerName: containerName,
 		}
 
 		shouldMonitorDocker := containerName != ""
@@ -114,6 +126,31 @@ var runCmd = &cobra.Command{
 
 		metrics := collector.Calculate(httpResults, dockerResults, dur)
 		metrics.PrettyPrint()
+
+		if jsonFile != "" {
+			metricsJSON, err := collector.OutputJSON(httpResults, dockerResults, config, *metrics)
+
+			if err != nil {
+				fmt.Println("Error converting metrics to JSON:", err)
+				return
+			}
+
+			outputPath, err := filepath.Abs(jsonFile)
+
+			if err != nil {
+				fmt.Println("Error determining absolute path for JSON file:", err)
+				return
+			}
+
+			err = os.WriteFile(outputPath, metricsJSON, 0644)
+
+			if err != nil {
+				fmt.Println("Error writing JSON file:", err)
+				return
+			}
+
+			fmt.Printf("\n✓ Results saved to %s\n", outputPath)
+		}
 	},
 }
 
@@ -123,4 +160,5 @@ func init() {
 	runCmd.Flags().StringVarP(&duration, "duration", "d", "30s", "Duration of the load test (e.g., 10s, 1m)")
 	runCmd.Flags().StringVar(&containerName, "container", "", "Docker container name or id to monitor")
 	runCmd.Flags().IntVarP(&connections, "connections", "c", 10, "Number of concurrent connections to use during the load test")
+	runCmd.Flags().StringVarP(&jsonFile, "json", "j", "", "Output results to a JSON file")
 }
