@@ -78,8 +78,8 @@ func (r *ComparisonReport) Print() {
 }
 
 func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
-	baselineHasDockerMetrics := baseline.Summary.DockerMetrics.Memory.Average != 0
-	testHasDockerMetrics := test.Summary.DockerMetrics.Memory.Average != 0
+	baselineHasDockerMetrics := len(baseline.DockerStats) > 0
+	testHasDockerMetrics := len(test.DockerStats) > 0
 
 	var dockerChanges []MetricChange
 
