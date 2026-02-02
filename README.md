@@ -22,7 +22,7 @@ loadship run https://httpbin.org -d 10s -c 10
 ```
 
 Output:
-```
+```text
 Running test (10/10s)  100% |████████████████████████████████████████|  
 Load test complete. Processing results...
 Total Requests: 638
@@ -39,7 +39,7 @@ loadship run http://localhost:8080 --container nginx -j baseline.json
 ```
 
 Output:
-```
+```text
 === Request Metrics ===
 Total Requests: 110210
 Successful Requests: 110210
@@ -61,7 +61,7 @@ loadship compare ./baseline.json new_deploy.json
 ```
 
 Output:
-```
+```text
 === Comparing Test Results ===
 Baseline: .\baseline.json (2026-02-02 21:47:46.2996229 +0000 UTC)
 Test: .\new_deploy.json (2026-02-02 21:47:55.7833856 +0000 UTC)
