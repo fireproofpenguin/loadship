@@ -73,7 +73,7 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 	}
 }
 
-func CheckContainerRunning(container_id string) (bool, error) {
+func CheckContainerRunning(containerID string) (bool, error) {
 	cli, err := client.New(context.Background())
 
 	if err != nil {
@@ -82,7 +82,7 @@ func CheckContainerRunning(container_id string) (bool, error) {
 
 	defer cli.Close()
 
-	inspect, err := cli.ContainerInspect(context.Background(), container_id, moby.ContainerInspectOptions{Size: false})
+	inspect, err := cli.ContainerInspect(context.Background(), containerID, moby.ContainerInspectOptions{Size: false})
 
 	if err != nil {
 		return false, fmt.Errorf("failed to inspect container: %w", err)
