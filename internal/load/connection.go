@@ -1,26 +1,32 @@
 package load
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"time"
 )
 
-func RequestLoop(id int, url string, startTime time.Time, duration time.Duration, channel chan []requestResult) {
+func MakeConnection(id int, url string, channel chan []HTTPStats, ctx context.Context) {
 	defaultTimeout := 30 * time.Second
 
 	client := &http.Client{
 		Timeout: defaultTimeout,
 	}
 
-	var results []requestResult
+	var results []HTTPStats
 
-	for time.Since(startTime) < duration {
+	for {
+		if ctx.Err() != nil {
+			channel <- results
+			return
+		}
+
 		reqStart := time.Now()
 		resp, err := client.Get(url)
 
 		if err != nil {
-			results = append(results, requestResult{err: err})
+			results = append(results, HTTPStats{Err: err})
 			continue
 		}
 
@@ -29,10 +35,9 @@ func RequestLoop(id int, url string, startTime time.Time, duration time.Duration
 
 		latency := time.Since(reqStart)
 
-		results = append(results, requestResult{
-			latency:    latency,
-			statusCode: resp.StatusCode,
+		results = append(results, HTTPStats{
+			Latency:    latency,
+			StatusCode: resp.StatusCode,
 		})
 	}
-	channel <- results
 }
