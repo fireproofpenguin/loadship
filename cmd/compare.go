@@ -62,6 +62,10 @@ var compareCmd = &cobra.Command{
 
 		b, err = os.ReadFile(file2Path)
 
+		if err != nil {
+			log.Fatalf("Error reading file: %v\n", err)
+		}
+
 		test, err := collector.ReadFromJSON(b)
 
 		if err != nil {
