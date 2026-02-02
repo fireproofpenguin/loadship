@@ -70,7 +70,7 @@ Test: .\new_deploy.json (2026-02-02 21:47:55.7833856 +0000 UTC)
 Metric          Baseline Test   Change
 ------          ------   ------ ------
 Total Requests  24       31     +7 (29.17%) ✓
-Failed Requests 0        0      0 (0.00%)
+Failed Requests 0        0      0 (n/a)
 RPS             4.80     6.20   +1.40 (29.17%) ✓
 Latency (Avg)   213      162    -52 (-24.18%) ✓
 Latency (p50)   95       94     -1 (-1.05%)
