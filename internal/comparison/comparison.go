@@ -93,7 +93,7 @@ func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
 	return &ComparisonReport{
 		HTTPChanges: []MetricChange{
 			CalculateMetricChange("Total Requests", float64(baseline.Summary.HTTPMetrics.Requests.Total), float64(test.Summary.HTTPMetrics.Requests.Total), false, "%.0f"),
-			CalculateMetricChange("Failed Requests", float64(baseline.Summary.HTTPMetrics.Requests.Failed), float64(test.Summary.HTTPMetrics.Requests.Failed), false, "%.0f"),
+			CalculateMetricChange("Failed Requests", float64(baseline.Summary.HTTPMetrics.Requests.Failed), float64(test.Summary.HTTPMetrics.Requests.Failed), true, "%.0f"),
 			CalculateMetricChange("RPS", baseline.Summary.HTTPMetrics.Requests.Rps, test.Summary.HTTPMetrics.Requests.Rps, false, "%.2f"),
 			CalculateMetricChange("Latency (Avg)", float64(baseline.Summary.HTTPMetrics.Latency.Average), float64(test.Summary.HTTPMetrics.Latency.Average), true, "%.0f"),
 			CalculateMetricChange("Latency (p50)", float64(baseline.Summary.HTTPMetrics.Latency.P50), float64(test.Summary.HTTPMetrics.Latency.P50), true, "%.0f"),
