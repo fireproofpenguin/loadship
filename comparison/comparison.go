@@ -61,10 +61,35 @@ func (r *ComparisonReport) Print() {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", change.Name, change.BaselineString(), change.TestString(), change.ChangeString())
 	}
 
+	if len(r.DockerChanges) > 0 {
+		fmt.Fprintln(w, "\n=== Docker Metrics ===")
+
+		fmt.Fprintln(w, "Memory\tBaseline\tTest\tChange")
+		fmt.Fprintln(w, "------\t------\t------\t------")
+		for _, change := range r.DockerChanges {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", change.Name, change.BaselineString(), change.TestString(), change.ChangeString())
+		}
+	}
+
 	w.Flush()
 }
 
 func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
+	baselineHasDockerMetrics := baseline.Summary.DockerMetrics.Memory.Average != 0
+	testHasDockerMetrics := test.Summary.DockerMetrics.Memory.Average != 0
+
+	var dockerChanges []MetricChange
+
+	if baselineHasDockerMetrics && testHasDockerMetrics {
+		dockerChanges = []MetricChange{
+			CalculateMetricChange("Average Memory (MB)", baseline.Summary.DockerMetrics.Memory.Average, test.Summary.DockerMetrics.Memory.Average, true, "%.2f"),
+			CalculateMetricChange("Min Memory (MB)", baseline.Summary.DockerMetrics.Memory.Min, test.Summary.DockerMetrics.Memory.Min, true, "%.2f"),
+			CalculateMetricChange("Max Memory (MB)", baseline.Summary.DockerMetrics.Memory.Max, test.Summary.DockerMetrics.Memory.Max, true, "%.2f"),
+		}
+	} else if baselineHasDockerMetrics || testHasDockerMetrics {
+		fmt.Println("Warning: Only one of the test results contains Docker metrics. Docker metrics will be skipped in the comparison.")
+	}
+
 	return &ComparisonReport{
 		HTTPChanges: []MetricChange{
 			CalculateMetricChange("Total Requests", float64(baseline.Summary.HTTPMetrics.Requests.Total), float64(test.Summary.HTTPMetrics.Requests.Total), false, "%.0f"),
@@ -76,6 +101,7 @@ func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
 			CalculateMetricChange("Latency (p95)", float64(baseline.Summary.HTTPMetrics.Latency.P95), float64(test.Summary.HTTPMetrics.Latency.P95), true, "%.0f"),
 			CalculateMetricChange("Latency (p99)", float64(baseline.Summary.HTTPMetrics.Latency.P99), float64(test.Summary.HTTPMetrics.Latency.P99), true, "%.0f"),
 		},
+		DockerChanges: dockerChanges,
 	}
 }
 

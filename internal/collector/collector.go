@@ -198,9 +198,6 @@ func (tc *TestConfig) IsSimilar(other TestConfig) bool {
 	if tc.Connections != other.Connections {
 		return false
 	}
-	if tc.ContainerName != other.ContainerName {
-		return false
-	}
 	if tc.Duration != other.Duration {
 		return false
 	}
