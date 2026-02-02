@@ -83,19 +83,19 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 	)
 
 	var minLatency, maxLatency time.Duration
-
-	if len(httpStats) == 0 {
-		fmt.Println("No requests were made.")
-	} else {
-		minLatency = httpStats[0].Latency
-		maxLatency = httpStats[0].Latency
-	}
+	var latencyInitialised bool
 
 	for _, result := range httpStats {
 		if result.Err == nil && result.StatusCode >= 200 && result.StatusCode < 300 {
 			successfulRequests++
 			totalLatency += float64(result.Latency.Milliseconds())
 			histogram.RecordValue(result.Latency.Milliseconds())
+			if !latencyInitialised {
+				minLatency = result.Latency
+				maxLatency = result.Latency
+				latencyInitialised = true
+				continue
+			}
 			if result.Latency < minLatency {
 				minLatency = result.Latency
 			}
