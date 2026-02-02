@@ -33,8 +33,11 @@ func (m MetricChange) ChangeString() string {
 		sign = "+"
 	}
 
+	percentStr := fmt.Sprintf("%.2f%%", m.Percent)
 	indicator := ""
-	if math.Abs(m.Percent) > 5 {
+	if m.Baseline == 0 {
+		percentStr = "n/a"
+	} else if math.Abs(m.Percent) > 5 {
 		if m.Better {
 			indicator = "✓"
 		} else {
@@ -43,7 +46,7 @@ func (m MetricChange) ChangeString() string {
 	}
 
 	deltaStr := fmt.Sprintf(m.Format, m.Delta)
-	return fmt.Sprintf("%s%s (%.2f%%) %s", sign, deltaStr, m.Percent, indicator)
+	return fmt.Sprintf("%s%s (%s) %s", sign, deltaStr, percentStr, indicator)
 }
 
 type ComparisonReport struct {
