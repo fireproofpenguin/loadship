@@ -191,6 +191,19 @@ type TestConfig struct {
 	ContainerName string        `json:"container_name,omitempty"`
 }
 
+func (tc *TestConfig) IsSimilar(other TestConfig) bool {
+	if tc.URL != other.URL {
+		return false
+	}
+	if tc.Connections != other.Connections {
+		return false
+	}
+	if tc.Duration != other.Duration {
+		return false
+	}
+	return true
+}
+
 func OutputJSON(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, config TestConfig, metrics Metrics) ([]byte, error) {
 	return json.Marshal(JSONOutput{
 		Metadata:    config,
@@ -198,4 +211,13 @@ func OutputJSON(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, co
 		DockerStats: dockerStats,
 		Summary:     metrics,
 	})
+}
+
+func ReadFromJSON(data []byte) (*JSONOutput, error) {
+	var output JSONOutput
+	err := json.Unmarshal(data, &output)
+	if err != nil {
+		return nil, err
+	}
+	return &output, nil
 }
