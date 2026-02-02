@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -54,6 +55,14 @@ var runCmd = &cobra.Command{
 			Connections:   connections,
 			ContainerName: containerName,
 		}
+
+		// Do a preflight HTTP check against the provided URL. Only care about transport issues - valid HTTP responses are fine
+		// This prevents us gunking up the output with a bunch of failed requests that resolve almost instantly
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Fatalf("Cannot reach %s: %v", url, err)
+		}
+		resp.Body.Close()
 
 		shouldMonitorDocker := containerName != ""
 
