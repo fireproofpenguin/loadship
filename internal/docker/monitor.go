@@ -15,14 +15,14 @@ type DockerStats struct {
 	MemoryUsageMB float64
 }
 
-func RunDockerMonitor(ctx context.Context, container string) []DockerStats {
+func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {
 	log.SetPrefix("RunDockerMonitor")
 	var results []DockerStats
 
 	cli, err := client.New(context.Background())
 
 	if err != nil {
-		log.Fatalf("failed to create docker client: %v", err)
+		return nil, fmt.Errorf("failed to create docker client: %w", err)
 	}
 
 	defer cli.Close()
@@ -37,8 +37,7 @@ func RunDockerMonitor(ctx context.Context, container string) []DockerStats {
 	stats, err := cli.ContainerStats(dockerCtx, container, options)
 
 	if err != nil {
-		log.Printf("Warning: Docker monitoring failed: %v\n", err)
-		return nil
+		return nil, fmt.Errorf("docker monitoring failed: %w", err)
 	}
 
 	defer stats.Body.Close()
@@ -48,13 +47,13 @@ func RunDockerMonitor(ctx context.Context, container string) []DockerStats {
 	for {
 		if ctx.Err() != nil {
 			dockerCtxCancel()
-			return results
+			return results, nil
 		}
 
 		response := mobyContainer.StatsResponse{}
 		if err := decoder.Decode(&response); err != nil {
 			dockerCtxCancel()
-			return results
+			return results, nil
 		}
 
 		usage := response.MemoryStats.Usage

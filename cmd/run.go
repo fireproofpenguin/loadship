@@ -100,7 +100,11 @@ var runCmd = &cobra.Command{
 
 		if shouldMonitorDocker {
 			wg.Go(func() {
-				dockerResults = docker.RunDockerMonitor(ctx, containerName)
+				var dockerErr error
+				dockerResults, dockerErr = docker.RunDockerMonitor(ctx, containerName)
+				if dockerErr != nil {
+					fmt.Println("Docker monitoring failed:", dockerErr)
+				}
 			})
 		}
 
