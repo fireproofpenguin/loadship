@@ -12,8 +12,8 @@ import (
 )
 
 type DockerStats struct {
-	Timestamp     time.Time
-	MemoryUsageMB float64
+	Timestamp     time.Time `json:"timestamp"`
+	MemoryUsageMB float64   `json:"memory_usage_mb"`
 }
 
 func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {

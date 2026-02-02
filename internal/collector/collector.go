@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
 	"time"
@@ -11,60 +12,60 @@ import (
 )
 
 type RequestMetrics struct {
-	total      int
-	failed     int
-	successful int
-	rps        float64
+	Total      int     `json:"total"`
+	Failed     int     `json:"failed"`
+	Successful int     `json:"successful"`
+	Rps        float64 `json:"rps"`
 }
 
 type LatencyMetrics struct {
-	average float64
-	min     int64
-	max     int64
-	p50     int64
-	p90     int64
-	p95     int64
-	p99     int64
+	Average float64 `json:"average"`
+	Min     int64   `json:"min"`
+	Max     int64   `json:"max"`
+	P50     int64   `json:"p50"`
+	P90     int64   `json:"p90"`
+	P95     int64   `json:"p95"`
+	P99     int64   `json:"p99"`
 }
 
 type HTTPMetrics struct {
-	requests RequestMetrics
-	latency  LatencyMetrics
+	Requests RequestMetrics `json:"requests"`
+	Latency  LatencyMetrics `json:"latency"`
 }
 
 type MemoryMetrics struct {
-	average float64
-	min     float64
-	max     float64
+	Average float64 `json:"average"`
+	Min     float64 `json:"min"`
+	Max     float64 `json:"max"`
 }
 
 type DockerMetrics struct {
 	collected bool
-	memory    MemoryMetrics
+	Memory    MemoryMetrics `json:"memory,omitempty"`
 }
 
 type Metrics struct {
-	HTTPMetrics   HTTPMetrics
-	DockerMetrics DockerMetrics
+	HTTPMetrics   HTTPMetrics   `json:"http_metrics"`
+	DockerMetrics DockerMetrics `json:"docker_metrics,omitempty"`
 }
 
 func (m *Metrics) PrettyPrint() {
 	fmt.Println("=== Request Metrics ===")
-	fmt.Println("Total Requests:", m.HTTPMetrics.requests.total)
-	fmt.Println("Successful Requests:", m.HTTPMetrics.requests.successful)
-	fmt.Println("Failed Requests:", m.HTTPMetrics.requests.failed)
-	fmt.Printf("Requests per Second: %.2f\n", m.HTTPMetrics.requests.rps)
-	if m.HTTPMetrics.requests.successful == 0 {
+	fmt.Println("Total Requests:", m.HTTPMetrics.Requests.Total)
+	fmt.Println("Successful Requests:", m.HTTPMetrics.Requests.Successful)
+	fmt.Println("Failed Requests:", m.HTTPMetrics.Requests.Failed)
+	fmt.Printf("Requests per Second: %.2f\n", m.HTTPMetrics.Requests.Rps)
+	if m.HTTPMetrics.Requests.Successful == 0 {
 		fmt.Println("------------- No successful requests -------------")
 		fmt.Println("--- Be careful using the latency metrics below ---")
 	}
-	fmt.Printf("Latency Min/Avg/Max: %d / %.2f / %d ms\n", m.HTTPMetrics.latency.min, m.HTTPMetrics.latency.average, m.HTTPMetrics.latency.max)
-	fmt.Printf("Latency p50/p90/p95/p99: %d / %d / %d / %d ms\n", m.HTTPMetrics.latency.p50, m.HTTPMetrics.latency.p90, m.HTTPMetrics.latency.p95, m.HTTPMetrics.latency.p99)
+	fmt.Printf("Latency Min/Avg/Max: %d / %.2f / %d ms\n", m.HTTPMetrics.Latency.Min, m.HTTPMetrics.Latency.Average, m.HTTPMetrics.Latency.Max)
+	fmt.Printf("Latency p50/p90/p95/p99: %d / %d / %d / %d ms\n", m.HTTPMetrics.Latency.P50, m.HTTPMetrics.Latency.P90, m.HTTPMetrics.Latency.P95, m.HTTPMetrics.Latency.P99)
 	if m.DockerMetrics.collected {
 		fmt.Println("=== Docker Metrics ===")
-		fmt.Printf("Average memory: %.2f MB\n", m.DockerMetrics.memory.average)
-		fmt.Printf("Min memory: %.2f MB\n", m.DockerMetrics.memory.min)
-		fmt.Printf("Max memory: %.2f MB\n", m.DockerMetrics.memory.max)
+		fmt.Printf("Average memory: %.2f MB\n", m.DockerMetrics.Memory.Average)
+		fmt.Printf("Min memory: %.2f MB\n", m.DockerMetrics.Memory.Min)
+		fmt.Printf("Max memory: %.2f MB\n", m.DockerMetrics.Memory.Max)
 	}
 }
 
@@ -118,20 +119,20 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 	p99 := histogram.ValueAtQuantile(99.0)
 
 	metrics.HTTPMetrics = HTTPMetrics{
-		requests: RequestMetrics{
-			total:      totalRequests,
-			failed:     failedRequests,
-			successful: successfulRequests,
-			rps:        rps,
+		Requests: RequestMetrics{
+			Total:      totalRequests,
+			Failed:     failedRequests,
+			Successful: successfulRequests,
+			Rps:        rps,
 		},
-		latency: LatencyMetrics{
-			average: averageLatency,
-			min:     minLatency.Milliseconds(),
-			max:     maxLatency.Milliseconds(),
-			p50:     p50,
-			p90:     p90,
-			p95:     p95,
-			p99:     p99,
+		Latency: LatencyMetrics{
+			Average: averageLatency,
+			Min:     minLatency.Milliseconds(),
+			Max:     maxLatency.Milliseconds(),
+			P50:     p50,
+			P90:     p90,
+			P95:     p95,
+			P99:     p99,
 		},
 	}
 
@@ -164,13 +165,37 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 
 		metrics.DockerMetrics = DockerMetrics{
 			collected: true,
-			memory: MemoryMetrics{
-				average: averageMemory,
-				min:     minMemory,
-				max:     maxMemory,
+			Memory: MemoryMetrics{
+				Average: averageMemory,
+				Min:     minMemory,
+				Max:     maxMemory,
 			},
 		}
 	}
 
 	return metrics
+}
+
+type JSONOutput struct {
+	Metadata    TestConfig           `json:"metadata"`
+	HTTPStats   []load.HTTPStats     `json:"http_stats"`
+	DockerStats []docker.DockerStats `json:"docker_stats,omitempty"`
+	Summary     Metrics              `json:"summary"`
+}
+
+type TestConfig struct {
+	Timestamp     time.Time     `json:"timestamp"`
+	URL           string        `json:"url"`
+	Duration      time.Duration `json:"duration"`
+	Connections   int           `json:"connections"`
+	ContainerName string        `json:"container_name,omitempty"`
+}
+
+func OutputJSON(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, config TestConfig, metrics Metrics) ([]byte, error) {
+	return json.Marshal(JSONOutput{
+		Metadata:    config,
+		HTTPStats:   httpStats,
+		DockerStats: dockerStats,
+		Summary:     metrics,
+	})
 }
