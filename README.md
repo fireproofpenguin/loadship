@@ -90,7 +90,7 @@ Latency (p99)   1126     761    -365 (-32.42%) ✓
 Currently basic HTTP load testing is available, however the plan is to expand the tool to offer the following features in future.
 
 - [x] HTTP load testing with percentile latencies
-- [-] Docker resource monitoring
+- [ ] Docker resource monitoring
     - [x] Memory utilisation
     - [ ] Other stats
 - [x] Stat output for results
