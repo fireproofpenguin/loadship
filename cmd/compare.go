@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fireproofpenguin/loadship/comparison"
 	"github.com/fireproofpenguin/loadship/internal/collector"
+	"github.com/fireproofpenguin/loadship/internal/comparison"
 	"github.com/spf13/cobra"
 )
 
