@@ -26,7 +26,7 @@ func MakeConnection(id int, url string, channel chan []HTTPStats, ctx context.Co
 		resp, err := client.Get(url)
 
 		if err != nil {
-			results = append(results, HTTPStats{Err: err})
+			results = append(results, HTTPStats{Timestamp: reqStart, Err: err})
 			continue
 		}
 
@@ -36,6 +36,7 @@ func MakeConnection(id int, url string, channel chan []HTTPStats, ctx context.Co
 		latency := time.Since(reqStart)
 
 		results = append(results, HTTPStats{
+			Timestamp:  reqStart,
 			Latency:    latency,
 			StatusCode: resp.StatusCode,
 		})

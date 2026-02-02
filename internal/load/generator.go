@@ -7,6 +7,7 @@ import (
 )
 
 type HTTPStats struct {
+	Timestamp  time.Time
 	Latency    time.Duration
 	Err        error
 	StatusCode int
