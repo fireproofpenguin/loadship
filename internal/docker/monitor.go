@@ -57,7 +57,12 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 		usage := response.MemoryStats.Usage
 		inactiveFile := response.MemoryStats.Stats["inactive_file"]
 
-		workingSet := usage - inactiveFile
+		var workingSet uint64
+		if usage > inactiveFile {
+			workingSet = usage - inactiveFile
+		} else {
+			workingSet = usage
+		}
 
 		memoryMB := float64(workingSet) / 1024 / 1024
 
