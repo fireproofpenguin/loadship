@@ -28,6 +28,20 @@
             width: 100%;
         }
 
+        .metadata {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+
+            .summary-pill {
+                background-color: oklch(30% 0.05 260);
+                border-radius: 20px;
+                color: oklch(90% 0.01 258);
+                font-size: 0.875rem;
+                padding: 0.25rem 0.75rem;
+            }
+        }
+
         .card-row {
             display: flex;
             gap: 1rem;
@@ -57,7 +71,16 @@
 
 <body>
     <main>
-        <h1>Summary</h1>
+        <div class="header">
+          <h1>Summary</h1>
+          <div class="metadata">
+            <span class="summary-pill">Start Time: {{.Metadata.Timestamp}}</span>
+            <span class="summary-pill">URL: {{.Metadata.URL}}</span>
+            <span class="summary-pill">Duration: {{.Metadata.Duration}}</span>
+            <span class="summary-pill">Connections: {{.Metadata.Connections}}</span>
+          {{ if .Metadata.ContainerName }}<span class="summary-pill">Container: {{.Metadata.ContainerName}}</span>{{end}}
+          </div>
+        </div>
         <div class="card-row">
             <div class="card">
                 <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Total}}</span>

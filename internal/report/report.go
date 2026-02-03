@@ -26,12 +26,14 @@ func Generate(data ReportData) ([]byte, error) {
 }
 
 type ReportData struct {
-	Summary collector.Metrics
+	Summary  collector.Metrics
+	Metadata collector.TestConfig
 }
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
 	return ReportData{
-		Summary: sanitiseSummary(json.Summary),
+		Summary:  sanitiseSummary(json.Summary),
+		Metadata: json.Metadata,
 	}
 }
 
