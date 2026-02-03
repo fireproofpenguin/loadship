@@ -1,0 +1,13 @@
+name: basic_suite
+url: http://localhost:8080/
+container: test-nginx
+cooldown: 10s
+report: true
+
+runs:
+  - duration: 30s
+    connections: 100
+  - duration: 10s
+    connections: 60
+  - duration: 60s
+    connections: 40

@@ -4,7 +4,7 @@
 
 Loadship answers the question: "Is this release better or worse than the last one?"
 
-Whilst there are plenty of great tools out there to run load tests against endpoints and lots of guides on setting up the perfect stack to test your endpoint, load results into a DB, get graphs going, etc - loadship aims to be a simple to use tool that answers the question "is this release better or worse than the last one"
+Whilst there are plenty of great tools out there to run load tests against endpoints and lots of guides on setting up the perfect stack to test your endpoint, load results into a DB, get graphs going, etc - loadship aims to be a simple tool that's quick to setup and get going.
 
 > [!NOTE]
 > loadship is an in progress project that aims to solve my specific use cases. Additionally this is my first go project released. PRs are welcome and encouraged.
@@ -95,6 +95,6 @@ Currently basic HTTP load testing is available, however the plan is to expand th
     - [ ] Other stats
 - [x] Stat output for results
 - [x] Comparison between runs
-- [ ] HTML reports with graphs
-- [ ] Config files for complex scenarios
+- [x] HTML reports with graphs
+- [x] Suite runs
 - [ ] Advanced load patterns (ramps, spikes, etc)
