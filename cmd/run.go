@@ -2,44 +2,44 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/fireproofpenguin/loadship/internal/collector"
 	"github.com/fireproofpenguin/loadship/internal/docker"
 	"github.com/fireproofpenguin/loadship/internal/load"
+	"github.com/fireproofpenguin/loadship/internal/report"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
 var (
-	duration      string
-	connections   int
-	containerName string
-	jsonFile      string
+	duration       time.Duration
+	connections    int
+	containerName  string
+	jsonFile       string
+	generateReport bool
 )
 
 var runCmd = &cobra.Command{
 	Use:   "run <target-url>",
 	Short: "Run load tests against a target service",
 	Long:  `Run a load test against a service, with or without docker.`,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if generateReport && jsonFile == "" {
+			return fmt.Errorf("must specify --json when using --report")
+		}
+
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println("Please provide a target URL")
-			return
-		}
-
-		dur, durErr := time.ParseDuration(duration)
-		if durErr != nil {
-			fmt.Println("Invalid duration:", durErr)
-			return
-		}
-
 		if connections <= 0 {
 			fmt.Println("Must have at least one connection")
 			return
@@ -51,7 +51,7 @@ var runCmd = &cobra.Command{
 		config := collector.TestConfig{
 			URL:           url,
 			Timestamp:     testStart,
-			Duration:      dur,
+			Duration:      duration,
 			Connections:   connections,
 			ContainerName: containerName,
 		}
@@ -78,10 +78,10 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), dur)
+		ctx, cancel := context.WithTimeout(context.Background(), duration)
 		defer cancel()
 
-		bar := progressbar.NewOptions(int(dur.Seconds()),
+		bar := progressbar.NewOptions(int(duration.Seconds()),
 			progressbar.OptionSetDescription("Running test..."),
 			progressbar.OptionSetWidth(40),
 			progressbar.OptionShowElapsedTimeOnFinish(),
@@ -94,7 +94,7 @@ var runCmd = &cobra.Command{
 
 		var (
 			elapsed int
-			total   int = int(dur.Seconds())
+			total   int = int(duration.Seconds())
 		)
 
 		go func() {
@@ -134,11 +134,13 @@ var runCmd = &cobra.Command{
 
 		fmt.Printf("\nLoad test complete. Processing results...\n")
 
-		metrics := collector.Calculate(httpResults, dockerResults, dur)
+		metrics := collector.Calculate(httpResults, dockerResults, duration)
 		metrics.PrettyPrint()
 
 		if jsonFile != "" {
-			metricsJSON, err := collector.OutputJSON(httpResults, dockerResults, config, *metrics)
+			metricsOutput := collector.ToJSONOutput(httpResults, dockerResults, config, *metrics)
+
+			metricsJSON, err := json.Marshal(metricsOutput)
 
 			if err != nil {
 				fmt.Println("Error converting metrics to JSON:", err)
@@ -160,6 +162,12 @@ var runCmd = &cobra.Command{
 			}
 
 			fmt.Printf("\n✓ Results saved to %s\n", outputPath)
+
+			if generateReport {
+				reportName := strings.TrimSuffix(jsonFile, ".json")
+
+				report.Write(&metricsOutput, reportName)
+			}
 		}
 	},
 }
@@ -167,8 +175,9 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVarP(&duration, "duration", "d", "30s", "Duration of the load test (e.g., 10s, 1m)")
+	runCmd.Flags().DurationVarP(&duration, "duration", "d", time.Second*30, "Duration of the load test (e.g., 10s, 1m)")
 	runCmd.Flags().StringVar(&containerName, "container", "", "Docker container name or id to monitor")
 	runCmd.Flags().IntVarP(&connections, "connections", "c", 10, "Number of concurrent connections to use during the load test")
 	runCmd.Flags().StringVarP(&jsonFile, "json", "j", "", "Output results to a JSON file")
+	runCmd.Flags().BoolVar(&generateReport, "report", false, "Generate an HTML report")
 }

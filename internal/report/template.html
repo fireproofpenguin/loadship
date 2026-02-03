@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+          --card-background-color: oklch(27.4% 0.006 286.033);
+          --card-color: oklch(92.2% 0 0);
+        }
+
+        body {
+            background-color: oklch(21% 0.006 285.885);
+            color: oklch(87.2% 0.01 258.338);
+            font-family: "Roboto", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings:
+                "wdth" 100;
+
+            display: flex;
+            justify-content: center;
+        }
+
+        main {
+            max-width: 1024px;
+            width: 100%;
+        }
+
+        .metadata {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+
+            .summary-pill {
+                background-color: var(--card-background-color);
+                border-radius: 20px;
+                color: var(--card-color);
+                font-size: 0.875rem;
+                padding: 0.25rem 0.75rem;
+            }
+        }
+
+        .card-row {
+            display: flex;
+            gap: 1rem;
+            margin: 16px 0;
+        }
+
+        .card {
+            align-items: center;
+            background-color: var(--card-background-color);
+            border-radius: 10px;
+            color: var(--card-color);
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            gap: 0.5rem;
+            padding: 1rem;
+
+            &.mini {
+                padding: 0.5rem;
+            }
+        }
+
+        .chart-container {
+            background-color: var(--card-background-color);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 16px 0;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script>
+        const labels = {{.Labels}};
+        const rpsData = {{.RPS}};
+        const errorData = {{.Errors}};
+        const latency = {{.Latency}};
+        const memory = {{.Memory}};
+    </script>
+</head>
+
+<body>
+    <main>
+        <div class="header">
+          <h1>Summary</h1>
+          <div class="metadata">
+            <span class="summary-pill">Start Time: {{.Metadata.Timestamp}}</span>
+            <span class="summary-pill">URL: {{.Metadata.URL}}</span>
+            <span class="summary-pill">Duration: {{.Metadata.Duration}}</span>
+            <span class="summary-pill">Connections: {{.Metadata.Connections}}</span>
+          {{ if .Metadata.ContainerName }}<span class="summary-pill">Container: {{.Metadata.ContainerName}}</span>{{end}}
+          </div>
+        </div>
+        <div class="card-row">
+            <div class="card">
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Total}}</span>
+                <span>Total Requests</span>
+            </div>
+            <div class="card">
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Successful}}</span>
+                <span>Successful</span>
+            </div>
+            <div class="card">
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Failed}}</span>
+                <span>Failed</span>
+            </div>
+            <div class="card">
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Rps}}</span>
+                <span>RPS</span>
+            </div>
+        </div>
+        <div class="card-row">
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.Min}}ms</span>
+                <span style="font-size: 0.75rem">Latency (min)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.Average}}ms</span>
+                <span style="font-size: 0.75rem">Latency (avg)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.Max}}ms</span>
+                <span style="font-size: 0.75rem">Latency (max)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P50}}ms</span>
+                <span style="font-size: 0.75rem">Latency (p50)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P90}}ms</span>
+                <span style="font-size: 0.75rem">Latency (p90)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P95}}ms</span>
+                <span style="font-size: 0.75rem">Latency (p95)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P99}}ms</span>
+                <span style="font-size: 0.75rem">Latency (p99)</span>
+            </div>
+        </div>
+        <h2>Requests</h2>
+        <div class="chart-container">
+          <canvas id="requestsChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="latencyChart"></canvas>
+        </div>
+        {{ if .Metadata.ContainerName }}
+        <h2>Container</h2>
+        <div class="chart-container">
+          <canvas id="memoryChart"></canvas>
+        </div>
+        {{end}}
+        <script>
+          const chartDefaults = {
+            type: 'line',
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 3,
+              scales: {
+                x: {
+                  title: { display: false, text: 'Time', color: '#aaa' },
+                  ticks: { color: '#aaa'},
+                  grid: { color: 'rgba(255,255,255,0.1)'},
+                },
+                y: {
+                  title: { display: false, text: 'Value', color: '#aaa' },
+                  ticks: { color: '#aaa' },
+                  grid: { color: 'rgba(255,255,255,0.1)' },
+                },
+              },
+              plugins: {
+                legend: { labels: { color: '#ccc' } },
+              }
+            }
+          }
+
+          new Chart(document.getElementById('requestsChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Requests",
+                data: rpsData,
+                borderColor: '#4a90d9',
+                fill: false,
+              },
+              {
+                label: "Errors",
+                data: errorData,
+                borderColor: '#d0021b',
+                fill: false,
+              }
+              ]
+            }
+          })
+
+          new Chart(document.getElementById('latencyChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Latency (ms)",
+                data: latency,
+                borderColor: '#50e3c2',
+                fill: false,
+              }]
+            }
+          })
+
+          {{ if .Metadata.ContainerName }}
+          new Chart(document.getElementById('memoryChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Memory (mb)",
+                data: memory,
+                borderColor: '#f5a623',
+                fill: false,
+              }]
+            }
+          })
+          {{end}}
+        </script>
+    </main>
+</body>
+
+</html>
