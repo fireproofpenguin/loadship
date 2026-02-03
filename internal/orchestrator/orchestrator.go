@@ -14,7 +14,11 @@ import (
 )
 
 func Orchestrate(config collector.TestConfig) ([]load.HTTPStats, []docker.DockerStats, error) {
-	preflightChecks(config)
+	err := preflightChecks(config)
+
+	if err != nil {
+		return nil, nil, err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.Duration)
 	defer cancel()
