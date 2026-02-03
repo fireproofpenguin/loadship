@@ -25,7 +25,12 @@ func Generate(data ReportData) ([]byte, error) {
 	}
 
 	var buf bytes.Buffer
-	tmpl.Execute(&buf, data)
+	err = tmpl.Execute(&buf, data)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute report template: %w", err)
+	}
+
 	return buf.Bytes(), nil
 }
 
