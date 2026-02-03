@@ -44,5 +44,6 @@ func roundFloat(val float64, precision int) float64 {
 
 func sanitiseSummary(summary collector.Metrics) collector.Metrics {
 	summary.HTTPMetrics.Latency.Average = roundFloat(summary.HTTPMetrics.Latency.Average, 2)
+	summary.HTTPMetrics.Requests.Rps = roundFloat(summary.HTTPMetrics.Requests.Rps, 2)
 	return summary
 }
