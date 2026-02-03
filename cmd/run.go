@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -65,28 +62,14 @@ var runCmd = &cobra.Command{
 		if jsonFile != "" {
 			metricsOutput := collector.ToJSONOutput(httpResults, dockerResults, config, *metrics)
 
-			metricsJSON, err := json.Marshal(metricsOutput)
+			err := metricsOutput.SaveToFile(jsonFile)
 
 			if err != nil {
-				fmt.Println("Error converting metrics to JSON:", err)
+				fmt.Println("Error saving JSON file:", err)
 				return
 			}
 
-			outputPath, err := filepath.Abs(jsonFile)
-
-			if err != nil {
-				fmt.Println("Error determining absolute path for JSON file:", err)
-				return
-			}
-
-			err = os.WriteFile(outputPath, metricsJSON, 0644)
-
-			if err != nil {
-				fmt.Println("Error writing JSON file:", err)
-				return
-			}
-
-			fmt.Printf("\n✓ Results saved to %s\n", outputPath)
+			fmt.Printf("\n✓ Results saved to %s\n", jsonFile)
 
 			if generateReport {
 				reportName := strings.TrimSuffix(jsonFile, ".json")
