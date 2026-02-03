@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	duration      string
+	duration      time.Duration
 	connections   int
 	containerName string
 	jsonFile      string
@@ -33,11 +33,6 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		dur, durErr := time.ParseDuration(duration)
-		if durErr != nil {
-			fmt.Println("Invalid duration:", durErr)
-			return
-		}
 
 		if connections <= 0 {
 			fmt.Println("Must have at least one connection")
@@ -50,7 +45,7 @@ var runCmd = &cobra.Command{
 		config := collector.TestConfig{
 			URL:           url,
 			Timestamp:     testStart,
-			Duration:      dur,
+			Duration:      duration,
 			Connections:   connections,
 			ContainerName: containerName,
 		}
@@ -68,10 +63,10 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), dur)
+		ctx, cancel := context.WithTimeout(context.Background(), duration)
 		defer cancel()
 
-		bar := progressbar.NewOptions(int(dur.Seconds()),
+		bar := progressbar.NewOptions(int(duration.Seconds()),
 			progressbar.OptionSetDescription("Running test..."),
 			progressbar.OptionSetWidth(40),
 			progressbar.OptionShowElapsedTimeOnFinish(),
@@ -84,7 +79,7 @@ var runCmd = &cobra.Command{
 
 		var (
 			elapsed int
-			total   int = int(dur.Seconds())
+			total   int = int(duration.Seconds())
 		)
 
 		go func() {
@@ -124,7 +119,7 @@ var runCmd = &cobra.Command{
 
 		fmt.Printf("\nLoad test complete. Processing results...\n")
 
-		metrics := collector.Calculate(httpResults, dockerResults, dur)
+		metrics := collector.Calculate(httpResults, dockerResults, duration)
 		metrics.PrettyPrint()
 
 		if jsonFile != "" {
@@ -157,7 +152,7 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVarP(&duration, "duration", "d", "30s", "Duration of the load test (e.g., 10s, 1m)")
+	runCmd.Flags().DurationVarP(&duration, "duration", "d", time.Second*30, "Duration of the load test (e.g., 10s, 1m)")
 	runCmd.Flags().StringVar(&containerName, "container", "", "Docker container name or id to monitor")
 	runCmd.Flags().IntVarP(&connections, "connections", "c", 10, "Number of concurrent connections to use during the load test")
 	runCmd.Flags().StringVarP(&jsonFile, "json", "j", "", "Output results to a JSON file")
