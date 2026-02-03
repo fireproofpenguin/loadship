@@ -204,13 +204,13 @@ func (tc *TestConfig) IsSimilar(other TestConfig) bool {
 	return true
 }
 
-func OutputJSON(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, config TestConfig, metrics Metrics) ([]byte, error) {
-	return json.Marshal(JSONOutput{
+func ToJSONOutput(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, config TestConfig, metrics Metrics) JSONOutput {
+	return JSONOutput{
 		Metadata:    config,
 		HTTPStats:   httpStats,
 		DockerStats: dockerStats,
 		Summary:     metrics,
-	})
+	}
 }
 
 func ReadFromJSON(data []byte) (*JSONOutput, error) {

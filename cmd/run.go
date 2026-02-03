@@ -2,38 +2,43 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/fireproofpenguin/loadship/internal/collector"
 	"github.com/fireproofpenguin/loadship/internal/docker"
 	"github.com/fireproofpenguin/loadship/internal/load"
+	"github.com/fireproofpenguin/loadship/internal/report"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
 var (
-	duration      time.Duration
-	connections   int
-	containerName string
-	jsonFile      string
+	duration       time.Duration
+	connections    int
+	containerName  string
+	jsonFile       string
+	generateReport bool
 )
 
 var runCmd = &cobra.Command{
 	Use:   "run <target-url>",
 	Short: "Run load tests against a target service",
 	Long:  `Run a load test against a service, with or without docker.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println("Please provide a target URL")
-			return
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if generateReport && jsonFile == "" {
+			return fmt.Errorf("must specify --json when using --report")
 		}
 
-
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
 		if connections <= 0 {
 			fmt.Println("Must have at least one connection")
 			return
@@ -123,7 +128,10 @@ var runCmd = &cobra.Command{
 		metrics.PrettyPrint()
 
 		if jsonFile != "" {
-			metricsJSON, err := collector.OutputJSON(httpResults, dockerResults, config, *metrics)
+			// return the struct, then de-sereialise to avoid double work
+			metricsJSON := collector.ToJSONOutput(httpResults, dockerResults, config, *metrics)
+
+			json, err := json.Marshal(metricsJSON)
 
 			if err != nil {
 				fmt.Println("Error converting metrics to JSON:", err)
@@ -137,7 +145,7 @@ var runCmd = &cobra.Command{
 				return
 			}
 
-			err = os.WriteFile(outputPath, metricsJSON, 0644)
+			err = os.WriteFile(outputPath, json, 0644)
 
 			if err != nil {
 				fmt.Println("Error writing JSON file:", err)
@@ -145,6 +153,12 @@ var runCmd = &cobra.Command{
 			}
 
 			fmt.Printf("\n✓ Results saved to %s\n", outputPath)
+
+			if generateReport {
+				reportName := strings.TrimSuffix(jsonFile, ".json")
+
+				report.Write(&metricsJSON, reportName)
+			}
 		}
 	},
 }
@@ -156,4 +170,5 @@ func init() {
 	runCmd.Flags().StringVar(&containerName, "container", "", "Docker container name or id to monitor")
 	runCmd.Flags().IntVarP(&connections, "connections", "c", 10, "Number of concurrent connections to use during the load test")
 	runCmd.Flags().StringVarP(&jsonFile, "json", "j", "", "Output results to a JSON file")
+	runCmd.Flags().BoolVar(&generateReport, "report", false, "Generate an HTML report")
 }
