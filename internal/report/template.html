@@ -60,56 +60,52 @@
         <h1>Summary</h1>
         <div class="card-row">
             <div class="card">
-                <span style="font-size: 2rem;" id="totalRequests">1000</span>
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Total}}</span>
                 <span>Total Requests</span>
             </div>
             <div class="card">
-                <span style="font-size: 2rem;" id="successfulRequests">1000</span>
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Successful}}</span>
                 <span>Successful</span>
             </div>
             <div class="card">
-                <span style="font-size: 2rem;">1000</span>
-                <span>Errors</span>
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Failed}}</span>
+                <span>Failed</span>
             </div>
             <div class="card">
-                <span style="font-size: 2rem;">1000</span>
+                <span style="font-size: 2rem;">{{.Summary.HTTPMetrics.Requests.Rps}}</span>
                 <span>RPS</span>
             </div>
         </div>
         <div class="card-row">
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.Min}}ms</span>
                 <span style="font-size: 0.75rem">Latency (min)</span>
             </div>
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.Average}}ms</span>
                 <span style="font-size: 0.75rem">Latency (avg)</span>
             </div>
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.Max}}ms</span>
                 <span style="font-size: 0.75rem">Latency (max)</span>
             </div>
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P50}}ms</span>
                 <span style="font-size: 0.75rem">Latency (p50)</span>
             </div>
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P90}}ms</span>
                 <span style="font-size: 0.75rem">Latency (p90)</span>
             </div>
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P95}}ms</span>
                 <span style="font-size: 0.75rem">Latency (p95)</span>
             </div>
             <div class="card mini">
-                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 1.25rem;">{{.Summary.HTTPMetrics.Latency.P99}}ms</span>
                 <span style="font-size: 0.75rem">Latency (p99)</span>
             </div>
         </div>
-        <script>
-            document.getElementById("totalRequests").textContent = summary.http_metrics.requests.total;
-            document.getElementById("successfulRequests").textContent = summary.http_metrics.requests.successful;
-        </script>
     </main>
 </body>
 
