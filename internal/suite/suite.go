@@ -33,6 +33,12 @@ func (c *Config) Validate() error {
 	if c.Name == "" {
 		return fmt.Errorf("suite name cannot be empty")
 	}
+	if strings.TrimSpace(c.Url) == "" {
+		return fmt.Errorf("suite URL cannot be empty")
+	}
+	if c.Cooldown < 0 {
+		return fmt.Errorf("cooldown duration cannot be negative")
+	}
 	if len(c.Runs) == 0 {
 		return fmt.Errorf("suite must have at least one run defined")
 	}
