@@ -76,9 +76,10 @@ func bucketHTTP(stats []load.HTTPStats, testStart time.Time) ([]string, []float6
 		}
 
 		buckets[second].requests++
-		buckets[second].latency = append(buckets[second].latency, s.Latency.Milliseconds())
 		if s.ErrorType != "" {
 			buckets[second].errors++
+		} else {
+			buckets[second].latency = append(buckets[second].latency, s.Latency.Milliseconds())
 		}
 	}
 
