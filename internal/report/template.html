@@ -63,6 +63,13 @@
                 padding: 0.5rem;
             }
         }
+
+        .chart-container {
+            background-color: oklch(25% 0.04 265);  /* Slightly lighter than body */
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 16px 0;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <script>
@@ -133,16 +140,33 @@
                 <span style="font-size: 0.75rem">Latency (p99)</span>
             </div>
         </div>
-        <canvas id="requestsChart"></canvas>
-        <canvas id="latencyChart"></canvas>
+        <div class="chart-container">
+          <canvas id="requestsChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="latencyChart"></canvas>
+        </div>
         <script>
           const chartDefaults = {
             type: 'line',
             options: {
               responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 3,
               scales: {
-                x: { title: { display: true, text: 'Time' } },
-                y: { title: { display: true, text: 'Value' } },
+                x: {
+                  title: { display: true, text: 'Time', color: '#aaa' },
+                  ticks: { color: '#aaa'},
+                  grid: { color: 'rgba(255,255,255,0.1)'},
+                },
+                y: {
+                  title: { display: true, text: 'Value', color: '#aaa' },
+                  ticks: { color: '#aaa' },
+                  grid: { color: 'rgba(255,255,255,0.1)' },
+                },
+              },
+              plugins: {
+                legend: { labels: { color: '#ccc' } },
               }
             }
           }
