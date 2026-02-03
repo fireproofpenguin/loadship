@@ -68,6 +68,7 @@
     <script>
         const labels = {{.Labels}};
         const rpsData = {{.RPS}};
+        const latency = {{.Latency}};
     </script>
 </head>
 
@@ -132,6 +133,7 @@
             </div>
         </div>
         <canvas id="requestsChart"></canvas>
+        <canvas id="latencyChart"></canvas>
         <script>
           const chartDefaults = {
             type: 'line',
@@ -152,6 +154,19 @@
                 label: "Requests",
                 data: rpsData,
                 borderColor: '#4a90d9',
+                fill: false,
+              }]
+            }
+          })
+
+          new Chart(document.getElementById('latencyChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Latency (ms)",
+                data: latency,
+                borderColor: '#50e3c2',
                 fill: false,
               }]
             }
