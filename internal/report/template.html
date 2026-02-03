@@ -64,8 +64,10 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <script>
-        const summary = {{.Summary}};
+        const labels = {{.Labels}};
+        const rpsData = {{.RPS}};
     </script>
 </head>
 
@@ -129,6 +131,32 @@
                 <span style="font-size: 0.75rem">Latency (p99)</span>
             </div>
         </div>
+        <canvas id="requestsChart"></canvas>
+        <script>
+          const chartDefaults = {
+            type: 'line',
+            options: {
+              responsive: true,
+              scales: {
+                x: { title: { display: true, text: 'Time' } },
+                y: { title: { display: true, text: 'Value' } },
+              }
+            }
+          }
+
+          new Chart(document.getElementById('requestsChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Requests",
+                data: rpsData,
+                borderColor: '#4a90d9',
+                fill: false,
+              }]
+            }
+          })
+        </script>
     </main>
 </body>
 

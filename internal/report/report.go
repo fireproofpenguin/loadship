@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"html/template"
 	"math"
+	"slices"
+	"time"
 
 	"github.com/fireproofpenguin/loadship/internal/collector"
+	"github.com/fireproofpenguin/loadship/internal/load"
 )
 
 //go:embed template.html
@@ -28,12 +31,17 @@ func Generate(data ReportData) ([]byte, error) {
 type ReportData struct {
 	Summary  collector.Metrics
 	Metadata collector.TestConfig
+	Labels   []string
+	RPS      []float64
 }
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
+	labels, rps, _ := bucketHTTP(json.HTTPStats, json.Metadata.Timestamp)
 	return ReportData{
 		Summary:  sanitiseSummary(json.Summary),
 		Metadata: json.Metadata,
+		Labels:   labels,
+		RPS:      rps,
 	}
 }
 
@@ -46,4 +54,44 @@ func sanitiseSummary(summary collector.Metrics) collector.Metrics {
 	summary.HTTPMetrics.Latency.Average = roundFloat(summary.HTTPMetrics.Latency.Average, 2)
 	summary.HTTPMetrics.Requests.Rps = roundFloat(summary.HTTPMetrics.Requests.Rps, 2)
 	return summary
+}
+
+func bucketHTTP(stats []load.HTTPStats, testStart time.Time) ([]string, []float64, []float64) {
+	type bucket struct {
+		requests int
+		errors   int
+	}
+
+	buckets := make(map[int64]*bucket)
+
+	for _, s := range stats {
+		second := int64(s.Timestamp.Sub(testStart).Seconds())
+		if buckets[second] == nil {
+			buckets[second] = &bucket{}
+		}
+
+		buckets[second].requests++
+		if s.ErrorType != "" {
+			buckets[second].errors++
+		}
+	}
+
+	keys := make([]int64, 0, len(buckets))
+	for k := range buckets {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	labels := make([]string, len(keys))
+	rps := make([]float64, len(keys))
+	errors := make([]float64, len(keys))
+
+	for i, k := range keys {
+		labels[i] = fmt.Sprintf("%ds", k)
+		rps[i] = float64(buckets[k].requests)
+		errors[i] = float64(buckets[k].errors)
+	}
+
+	return labels, rps, errors
 }
