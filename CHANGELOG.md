@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/fireproofpenguin/loadship/compare/v0.2.0...v0.3.0) (2026-02-02)
+
+
+### Features
+
+* add compare command ([#11](https://github.com/fireproofpenguin/loadship/issues/11)) ([9f26f2f](https://github.com/fireproofpenguin/loadship/commit/9f26f2fae28074da2c95d282caac41d690eeda73))
+* add json output ([#9](https://github.com/fireproofpenguin/loadship/issues/9)) ([a6c9a2f](https://github.com/fireproofpenguin/loadship/commit/a6c9a2fc80447ecf919655c0ba67499c319ab404))
+* add preflight HTTP check before commencing test ([#12](https://github.com/fireproofpenguin/loadship/issues/12)) ([43aedb6](https://github.com/fireproofpenguin/loadship/commit/43aedb6a2f6656dba5079b408ff35cf307d9c800))
+
 ## [0.2.0](https://github.com/fireproofpenguin/loadship/compare/v0.1.0...v0.2.0) (2026-02-02)
 
 
