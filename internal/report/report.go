@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fireproofpenguin/loadship/internal/collector"
+	"github.com/fireproofpenguin/loadship/internal/docker"
 	"github.com/fireproofpenguin/loadship/internal/load"
 )
 
@@ -35,10 +36,14 @@ type ReportData struct {
 	RPS      []float64
 	Errors   []float64
 	Latency  []float64
+	Memory   []float64
 }
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
 	labels, rps, errors, latency := bucketHTTP(json.HTTPStats, json.Metadata.Timestamp)
+
+	memory := bucketDocker(json.DockerStats, json.Metadata.Timestamp)
+
 	return ReportData{
 		Summary:  sanitiseSummary(json.Summary),
 		Metadata: json.Metadata,
@@ -46,6 +51,7 @@ func CreateReportData(json *collector.JSONOutput) ReportData {
 		RPS:      rps,
 		Errors:   errors,
 		Latency:  latency,
+		Memory:   memory,
 	}
 }
 
@@ -111,4 +117,35 @@ func bucketHTTP(stats []load.HTTPStats, testStart time.Time) ([]string, []float6
 	}
 
 	return labels, rps, errors, latency
+}
+
+func bucketDocker(stats []docker.DockerStats, testStart time.Time) []float64 {
+	type bucket struct {
+		memoryUsageMB float64
+	}
+
+	buckets := make(map[int64]*bucket)
+
+	for _, s := range stats {
+		second := int64(s.Timestamp.Sub(testStart).Seconds())
+
+		buckets[second] = &bucket{
+			memoryUsageMB: s.MemoryUsageMB,
+		}
+	}
+
+	keys := make([]int64, 0, len(buckets))
+	for k := range buckets {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	memoryUsage := make([]float64, len(keys))
+
+	for i, k := range keys {
+		memoryUsage[i] = buckets[k].memoryUsageMB
+	}
+
+	return memoryUsage
 }

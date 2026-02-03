@@ -9,8 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
         rel="stylesheet">
     <style>
+        :root {
+          --card-background-color: oklch(27.4% 0.006 286.033);
+          --card-color: oklch(92.2% 0 0);
+        }
+
         body {
-            background-color: oklch(20.8% 0.042 265.755);
+            background-color: oklch(21% 0.006 285.885);
             color: oklch(87.2% 0.01 258.338);
             font-family: "Roboto", sans-serif;
             font-optical-sizing: auto;
@@ -34,9 +39,9 @@
             gap: 0.5rem;
 
             .summary-pill {
-                background-color: oklch(30% 0.05 260);
+                background-color: var(--card-background-color);
                 border-radius: 20px;
-                color: oklch(90% 0.01 258);
+                color: var(--card-color);
                 font-size: 0.875rem;
                 padding: 0.25rem 0.75rem;
             }
@@ -50,9 +55,9 @@
 
         .card {
             align-items: center;
-            background-color: white;
+            background-color: var(--card-background-color);
             border-radius: 10px;
-            color: oklch(37.1% 0 0);
+            color: var(--card-color);
             display: flex;
             flex-direction: column;
             flex: 1 1 auto;
@@ -65,7 +70,7 @@
         }
 
         .chart-container {
-            background-color: oklch(25% 0.04 265);  /* Slightly lighter than body */
+            background-color: var(--card-background-color);
             border-radius: 10px;
             padding: 1rem;
             margin: 16px 0;
@@ -77,6 +82,7 @@
         const rpsData = {{.RPS}};
         const errorData = {{.Errors}};
         const latency = {{.Latency}};
+        const memory = {{.Memory}};
     </script>
 </head>
 
@@ -140,12 +146,19 @@
                 <span style="font-size: 0.75rem">Latency (p99)</span>
             </div>
         </div>
+        <h2>Requests</h2>
         <div class="chart-container">
           <canvas id="requestsChart"></canvas>
         </div>
         <div class="chart-container">
           <canvas id="latencyChart"></canvas>
         </div>
+        {{ if .Metadata.ContainerName }}
+        <h2>Container</h2>
+        <div class="chart-container">
+          <canvas id="memoryChart"></canvas>
+        </div>
+        {{end}}
         <script>
           const chartDefaults = {
             type: 'line',
@@ -155,12 +168,12 @@
               aspectRatio: 3,
               scales: {
                 x: {
-                  title: { display: true, text: 'Time', color: '#aaa' },
+                  title: { display: false, text: 'Time', color: '#aaa' },
                   ticks: { color: '#aaa'},
                   grid: { color: 'rgba(255,255,255,0.1)'},
                 },
                 y: {
-                  title: { display: true, text: 'Value', color: '#aaa' },
+                  title: { display: false, text: 'Value', color: '#aaa' },
                   ticks: { color: '#aaa' },
                   grid: { color: 'rgba(255,255,255,0.1)' },
                 },
@@ -203,6 +216,21 @@
               }]
             }
           })
+
+          {{ if .Metadata.ContainerName }}
+          new Chart(document.getElementById('memoryChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Memory (mb)",
+                data: memory,
+                borderColor: '#f5a623',
+                fill: false,
+              }]
+            }
+          })
+          {{end}}
         </script>
     </main>
 </body>
