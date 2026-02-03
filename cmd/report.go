@@ -52,9 +52,11 @@ var reportCmd = &cobra.Command{
 
 		reportData := report.CreateReportData(output)
 
-		fmt.Printf("DEBUG: reportData is %+v\n", reportData)
-
 		reportBytes, err := report.Generate(reportData)
+
+		if err != nil {
+			log.Fatalf("Error generating report: %v\n", err)
+		}
 
 		outputPath, err := filepath.Abs(fmt.Sprintf("%s.html", reportName))
 
