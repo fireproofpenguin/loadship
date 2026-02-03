@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            background-color: oklch(20.8% 0.042 265.755);
+            color: oklch(87.2% 0.01 258.338);
+            font-family: "Roboto", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings:
+                "wdth" 100;
+
+            display: flex;
+            justify-content: center;
+        }
+
+        main {
+            max-width: 1024px;
+            width: 100%;
+        }
+
+        .card-row {
+            display: flex;
+            gap: 1rem;
+            margin: 16px 0;
+        }
+
+        .card {
+            align-items: center;
+            background-color: white;
+            border-radius: 10px;
+            color: oklch(37.1% 0 0);
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            gap: 0.5rem;
+            padding: 1rem;
+
+            &.mini {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+    <script>
+        const summary = {{.Summary}};
+    </script>
+</head>
+
+<body>
+    <main>
+        <h1>Summary</h1>
+        <div class="card-row">
+            <div class="card">
+                <span style="font-size: 2rem;" id="totalRequests">1000</span>
+                <span>Total Requests</span>
+            </div>
+            <div class="card">
+                <span style="font-size: 2rem;" id="successfulRequests">1000</span>
+                <span>Successful</span>
+            </div>
+            <div class="card">
+                <span style="font-size: 2rem;">1000</span>
+                <span>Errors</span>
+            </div>
+            <div class="card">
+                <span style="font-size: 2rem;">1000</span>
+                <span>RPS</span>
+            </div>
+        </div>
+        <div class="card-row">
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (min)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (avg)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (max)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (p50)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (p90)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (p95)</span>
+            </div>
+            <div class="card mini">
+                <span style="font-size: 1.25rem;">1000ms</span>
+                <span style="font-size: 0.75rem">Latency (p99)</span>
+            </div>
+        </div>
+        <script>
+            document.getElementById("totalRequests").textContent = summary.http_metrics.requests.total;
+            document.getElementById("successfulRequests").textContent = summary.http_metrics.requests.successful;
+        </script>
+    </main>
+</body>
+
+</html>
