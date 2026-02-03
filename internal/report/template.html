@@ -68,6 +68,7 @@
     <script>
         const labels = {{.Labels}};
         const rpsData = {{.RPS}};
+        const errorData = {{.Errors}};
         const latency = {{.Latency}};
     </script>
 </head>
@@ -155,7 +156,14 @@
                 data: rpsData,
                 borderColor: '#4a90d9',
                 fill: false,
-              }]
+              },
+              {
+                label: "Errors",
+                data: errorData,
+                borderColor: '#d0021b',
+                fill: false,
+              }
+              ]
             }
           })
 

@@ -33,16 +33,18 @@ type ReportData struct {
 	Metadata collector.TestConfig
 	Labels   []string
 	RPS      []float64
+	Errors   []float64
 	Latency  []float64
 }
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
-	labels, rps, _, latency := bucketHTTP(json.HTTPStats, json.Metadata.Timestamp)
+	labels, rps, errors, latency := bucketHTTP(json.HTTPStats, json.Metadata.Timestamp)
 	return ReportData{
 		Summary:  sanitiseSummary(json.Summary),
 		Metadata: json.Metadata,
 		Labels:   labels,
 		RPS:      rps,
+		Errors:   errors,
 		Latency:  latency,
 	}
 }
