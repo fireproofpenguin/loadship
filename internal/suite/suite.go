@@ -56,6 +56,8 @@ func Start(config Config) error {
 	fmt.Println("Running test suite from config", config.Name)
 
 	totalRuns := len(config.Runs)
+	var failedRuns int
+	var lastErr error
 
 	directory := fmt.Sprintf("suite_%s_%s", config.Name, time.Now().Format("20060102_150405"))
 
@@ -78,6 +80,8 @@ func Start(config Config) error {
 
 		if err != nil {
 			fmt.Printf("Run %d failed: %v\n", currentRun+1, err)
+			failedRuns++
+			lastErr = err
 			continue
 		}
 
@@ -88,6 +92,8 @@ func Start(config Config) error {
 
 		if err != nil {
 			fmt.Println("Error saving JSON file:", err)
+			failedRuns++
+			lastErr = err
 		}
 
 		if config.Report {
@@ -101,8 +107,11 @@ func Start(config Config) error {
 		}
 	}
 
-	fmt.Printf("Test suite complete. Results saved to %s/\n", directory)
+	if failedRuns > 0 {
+		return fmt.Errorf("%d/%d runs failed; last error: %w", failedRuns, totalRuns, lastErr)
+	}
 
+	fmt.Printf("Test suite complete. Results saved to %s/\n", directory)
 	return nil
 }
 
