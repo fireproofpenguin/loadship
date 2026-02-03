@@ -21,37 +21,35 @@ var suiteCmd = &cobra.Command{
 
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		configFile := args[0]
 
 		bytes, err := os.ReadFile(configFile)
 
 		if err != nil {
-			fmt.Printf("Error reading config file: %v\n", err)
-			return
+			return fmt.Errorf("error reading config file: %w", err)
 		}
 
 		config := suite.Config{}
 		err = yaml.Unmarshal(bytes, &config)
 
 		if err != nil {
-			fmt.Printf("Error parsing config file: %v\n", err)
-			return
+			return fmt.Errorf("error parsing config file: %w", err)
 		}
 
 		err = config.Validate()
 
 		if err != nil {
-			fmt.Printf("Suite config contains 1 or more errors: %v\n", err)
-			return
+			return fmt.Errorf("suite config contains 1 or more errors: %w", err)
 		}
 
 		err = suite.Start(config)
 
 		if err != nil {
-			fmt.Printf("Error running test suite: %v\n", err)
-			return
+			return fmt.Errorf("error running test suite: %w", err)
 		}
+
+		return nil
 	},
 }
 
