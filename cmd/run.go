@@ -138,10 +138,9 @@ var runCmd = &cobra.Command{
 		metrics.PrettyPrint()
 
 		if jsonFile != "" {
-			// return the struct, then de-sereialise to avoid double work
-			metricsJSON := collector.ToJSONOutput(httpResults, dockerResults, config, *metrics)
+			metricsOutput := collector.ToJSONOutput(httpResults, dockerResults, config, *metrics)
 
-			json, err := json.Marshal(metricsJSON)
+			metricsJSON, err := json.Marshal(metricsOutput)
 
 			if err != nil {
 				fmt.Println("Error converting metrics to JSON:", err)
@@ -155,7 +154,7 @@ var runCmd = &cobra.Command{
 				return
 			}
 
-			err = os.WriteFile(outputPath, json, 0644)
+			err = os.WriteFile(outputPath, metricsJSON, 0644)
 
 			if err != nil {
 				fmt.Println("Error writing JSON file:", err)
@@ -167,7 +166,7 @@ var runCmd = &cobra.Command{
 			if generateReport {
 				reportName := strings.TrimSuffix(jsonFile, ".json")
 
-				report.Write(&metricsJSON, reportName)
+				report.Write(&metricsOutput, reportName)
 			}
 		}
 	},
