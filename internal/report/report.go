@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"html/template"
+	"math"
 
 	"github.com/fireproofpenguin/loadship/internal/collector"
 )
@@ -30,6 +31,16 @@ type ReportData struct {
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
 	return ReportData{
-		Summary: json.Summary,
+		Summary: sanitiseSummary(json.Summary),
 	}
+}
+
+func roundFloat(val float64, precision int) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
+}
+
+func sanitiseSummary(summary collector.Metrics) collector.Metrics {
+	summary.HTTPMetrics.Latency.Average = roundFloat(summary.HTTPMetrics.Latency.Average, 2)
+	return summary
 }
