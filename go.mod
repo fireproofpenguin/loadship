@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.2.0
 	github.com/docker/go-sdk/client v0.1.0-alpha012
+	github.com/goccy/go-yaml v1.19.2
 	github.com/schollz/progressbar/v3 v3.19.0
 	github.com/spf13/cobra v1.10.2
 )
