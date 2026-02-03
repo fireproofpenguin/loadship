@@ -25,18 +25,21 @@ var runCmd = &cobra.Command{
 	Short: "Run load tests against a target service",
 	Long:  `Run a load test against a service, with or without docker.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("must provide target URL")
+		}
+
+		if connections <= 0 {
+			return fmt.Errorf("must have at least one connection")
+		}
+
 		if generateReport && jsonFile == "" {
-			return fmt.Errorf("must specify --json when using --report")
+			return fmt.Errorf("--report requires --json to be specified")
 		}
 
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if connections <= 0 {
-			fmt.Println("Must have at least one connection")
-			return
-		}
-
 		url := args[0]
 		testStart := time.Now()
 
