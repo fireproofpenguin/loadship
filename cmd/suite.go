@@ -46,7 +46,12 @@ var suiteCmd = &cobra.Command{
 			return
 		}
 
-		suite.Start(config)
+		err = suite.Start(config)
+
+		if err != nil {
+			fmt.Printf("Error running test suite: %v\n", err)
+			return
+		}
 	},
 }
 

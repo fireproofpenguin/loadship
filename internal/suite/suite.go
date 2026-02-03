@@ -3,7 +3,6 @@ package suite
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -53,16 +52,15 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func Start(config Config) {
+func Start(config Config) error {
 	fmt.Println("Running test suite from config", config.Name)
 
 	totalRuns := len(config.Runs)
 
 	directory := fmt.Sprintf("suite_%s_%s", config.Name, time.Now().Format("20060102_150405"))
-	err := os.Mkdir(directory, os.ModePerm)
 
-	if err != nil {
-		log.Fatalf("Error creating suite directory: %v", err)
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		return fmt.Errorf("error creating suite directory: %w", err)
 	}
 
 	for currentRun, run := range config.Runs {
@@ -104,6 +102,8 @@ func Start(config Config) {
 	}
 
 	fmt.Printf("Test suite complete. Results saved to %s/\n", directory)
+
+	return nil
 }
 
 func cooldown(duration time.Duration) {
