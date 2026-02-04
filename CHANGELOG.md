@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/fireproofpenguin/loadship/compare/v0.3.0...v0.4.0) (2026-02-04)
+
+
+### Features
+
+* add basic HTML reports ([#13](https://github.com/fireproofpenguin/loadship/issues/13)) ([d45fb27](https://github.com/fireproofpenguin/loadship/commit/d45fb27c65e77ae0922e48bb3689a3a2268a78f6))
+* add suite command for configuration based runs ([#15](https://github.com/fireproofpenguin/loadship/issues/15)) ([ddecdca](https://github.com/fireproofpenguin/loadship/commit/ddecdca42dff6467d5f87a6660e05e2e8f93d8bd))
+
 ## [0.3.0](https://github.com/fireproofpenguin/loadship/compare/v0.2.0...v0.3.0) (2026-02-02)
 
 
