@@ -164,9 +164,9 @@ func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, [
 	diskWriteMB := make([]float64, len(keys))
 
 	var previousReadMB, previousWriteMB float64
-	if len(stats) > 0 {
-		previousReadMB = buckets[0].diskReadMB
-		previousWriteMB = buckets[0].diskWriteMB
+	if len(keys) > 0 {
+		previousReadMB = buckets[keys[0]].diskReadMB
+		previousWriteMB = buckets[keys[0]].diskWriteMB
 	}
 
 	for i, k := range keys {
