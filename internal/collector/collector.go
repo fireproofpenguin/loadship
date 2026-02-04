@@ -3,6 +3,7 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"runtime"
 	"time"
 
@@ -181,6 +182,14 @@ type JSONOutput struct {
 	HTTPStats   []load.HTTPStats     `json:"http_stats"`
 	DockerStats []docker.DockerStats `json:"docker_stats,omitempty"`
 	Summary     Metrics              `json:"summary"`
+}
+
+func (jo *JSONOutput) SaveToFile(filename string) error {
+	data, err := json.Marshal(jo)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filename, data, 0644)
 }
 
 type TestConfig struct {

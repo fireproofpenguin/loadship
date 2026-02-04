@@ -1,22 +1,14 @@
 package cmd
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/fireproofpenguin/loadship/internal/collector"
-	"github.com/fireproofpenguin/loadship/internal/docker"
-	"github.com/fireproofpenguin/loadship/internal/load"
+	"github.com/fireproofpenguin/loadship/internal/orchestrator"
 	"github.com/fireproofpenguin/loadship/internal/report"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -33,18 +25,21 @@ var runCmd = &cobra.Command{
 	Short: "Run load tests against a target service",
 	Long:  `Run a load test against a service, with or without docker.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("must provide target URL")
+		}
+
+		if connections <= 0 {
+			return fmt.Errorf("must have at least one connection")
+		}
+
 		if generateReport && jsonFile == "" {
-			return fmt.Errorf("must specify --json when using --report")
+			return fmt.Errorf("--report requires --json to be specified")
 		}
 
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if connections <= 0 {
-			fmt.Println("Must have at least one connection")
-			return
-		}
-
 		url := args[0]
 		testStart := time.Now()
 
@@ -56,81 +51,11 @@ var runCmd = &cobra.Command{
 			ContainerName: containerName,
 		}
 
-		// Do a preflight HTTP check against the provided URL. Only care about transport issues - valid HTTP responses are fine
-		// This prevents us gunking up the output with a bunch of failed requests that resolve almost instantly
-		preflightClient := &http.Client{Timeout: 10 * time.Second}
-		resp, err := preflightClient.Get(url)
+		httpResults, dockerResults, err := orchestrator.Orchestrate(config)
+
 		if err != nil {
-			log.Fatalf("Cannot reach %s: %v", url, err)
+			log.Fatalf("Error during test orchestration: %v", err)
 		}
-		resp.Body.Close()
-
-		shouldMonitorDocker := containerName != ""
-
-		if shouldMonitorDocker {
-			isRunning, err := docker.CheckContainerRunning(containerName)
-
-			if err != nil {
-				log.Fatalf("Error checking container: %v", err)
-			}
-			if !isRunning {
-				log.Fatalf("Container %s is not running", containerName)
-			}
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), duration)
-		defer cancel()
-
-		bar := progressbar.NewOptions(int(duration.Seconds()),
-			progressbar.OptionSetDescription("Running test..."),
-			progressbar.OptionSetWidth(40),
-			progressbar.OptionShowElapsedTimeOnFinish(),
-			progressbar.OptionSetPredictTime(false),
-			progressbar.OptionClearOnFinish(),
-		)
-
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
-		var (
-			elapsed int
-			total   int = int(duration.Seconds())
-		)
-
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					bar.Add(1)
-					elapsed += 1
-					bar.Describe(fmt.Sprintf("Running test (%d/%ds)", elapsed, total))
-				case <-ctx.Done():
-					bar.Finish()
-					return
-				}
-			}
-		}()
-
-		var wg sync.WaitGroup
-
-		var httpResults []load.HTTPStats
-		var dockerResults []docker.DockerStats
-
-		wg.Go(func() {
-			httpResults = load.RunHTTPTest(ctx, url, connections)
-		})
-
-		if shouldMonitorDocker {
-			wg.Go(func() {
-				var dockerErr error
-				dockerResults, dockerErr = docker.RunDockerMonitor(ctx, containerName)
-				if dockerErr != nil {
-					fmt.Println("Docker monitoring failed:", dockerErr)
-				}
-			})
-		}
-
-		wg.Wait()
 
 		fmt.Printf("\nLoad test complete. Processing results...\n")
 
@@ -140,28 +65,14 @@ var runCmd = &cobra.Command{
 		if jsonFile != "" {
 			metricsOutput := collector.ToJSONOutput(httpResults, dockerResults, config, *metrics)
 
-			metricsJSON, err := json.Marshal(metricsOutput)
+			err := metricsOutput.SaveToFile(jsonFile)
 
 			if err != nil {
-				fmt.Println("Error converting metrics to JSON:", err)
+				fmt.Println("Error saving JSON file:", err)
 				return
 			}
 
-			outputPath, err := filepath.Abs(jsonFile)
-
-			if err != nil {
-				fmt.Println("Error determining absolute path for JSON file:", err)
-				return
-			}
-
-			err = os.WriteFile(outputPath, metricsJSON, 0644)
-
-			if err != nil {
-				fmt.Println("Error writing JSON file:", err)
-				return
-			}
-
-			fmt.Printf("\n✓ Results saved to %s\n", outputPath)
+			fmt.Printf("\n✓ Results saved to %s\n", jsonFile)
 
 			if generateReport {
 				reportName := strings.TrimSuffix(jsonFile, ".json")
