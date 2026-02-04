@@ -111,7 +111,7 @@ func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
 		}
 		cpuChanges = []MetricChange{
 			CalculateMetricChange("Average CPU (%)", baseline.Summary.DockerMetrics.CPU.Average, test.Summary.DockerMetrics.CPU.Average, true, "%.2f"),
-			CalculateMetricChange("Peak CPU (%)", baseline.Summary.DockerMetrics.CPU.Peak, test.Summary.DockerMetrics.CPU.Average, true, "%.2f"),
+			CalculateMetricChange("Peak CPU (%)", baseline.Summary.DockerMetrics.CPU.Peak, test.Summary.DockerMetrics.CPU.Peak, true, "%.2f"),
 		}
 		diskIOChanges = []MetricChange{
 			CalculateMetricChange("Read (MB)", baseline.Summary.DockerMetrics.DiskIO.ReadMB, test.Summary.DockerMetrics.DiskIO.ReadMB, true, "%.2f"),
