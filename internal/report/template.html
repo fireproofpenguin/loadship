@@ -83,6 +83,7 @@
         const errorData = {{.Errors}};
         const latency = {{.Latency}};
         const memory = {{.Memory}};
+        const cpu = {{.CPU}};
         const diskReadMB = {{.DiskReadMB}};
         const diskWriteMB = {{.DiskWriteMB}};
     </script>
@@ -161,6 +162,9 @@
           <canvas id="memoryChart"></canvas>
         </div>
         <div class="chart-container">
+          <canvas id="cpuChart"></canvas>
+        </div>
+        <div class="chart-container">
           <canvas id="diskChart"></canvas>
         </div>
         {{end}}
@@ -231,6 +235,18 @@
                 label: "Memory (mb)",
                 data: memory,
                 borderColor: '#f5a623',
+                fill: false,
+              }]
+            }
+          })
+          new Chart(document.getElementById('cpuChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "CPU (%)",
+                data: cpu,
+                borderColor: '#7ed321',
                 fill: false,
               }]
             }
