@@ -40,9 +40,15 @@ type MemoryMetrics struct {
 	Max     float64 `json:"max"`
 }
 
+type DiskIOMetrics struct {
+	ReadMB  float64 `json:"disk_read_mb"`
+	WriteMB float64 `json:"disk_write_mb"`
+}
+
 type DockerMetrics struct {
 	collected bool
 	Memory    MemoryMetrics `json:"memory,omitempty"`
+	DiskIO    DiskIOMetrics `json:"disk_io,omitempty"`
 }
 
 type Metrics struct {
@@ -67,6 +73,7 @@ func (m *Metrics) PrettyPrint() {
 		fmt.Printf("Average memory: %.2f MB\n", m.DockerMetrics.Memory.Average)
 		fmt.Printf("Min memory: %.2f MB\n", m.DockerMetrics.Memory.Min)
 		fmt.Printf("Max memory: %.2f MB\n", m.DockerMetrics.Memory.Max)
+		fmt.Printf("DiskIO:\tRead: %.2f MB\tWrite: %.2f MB\n", m.DockerMetrics.DiskIO.ReadMB, m.DockerMetrics.DiskIO.WriteMB)
 	}
 }
 
@@ -140,7 +147,7 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 	// Docker metrics
 	if len(dockerStats) > 0 {
 		if runtime.GOOS == "windows" {
-			fmt.Println("Windows detected, cannot calculate CPU usage reliably - at this time!")
+			fmt.Println("Windows detected, cannot calculate CPU / DiskIO usage reliably - at this time!")
 		}
 
 		var (
@@ -151,6 +158,12 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 
 		minMemory = dockerStats[0].MemoryUsageMB
 		maxMemory = dockerStats[0].MemoryUsageMB
+
+		baselineRead := dockerStats[0].DiskReadMB
+		baselineWrite := dockerStats[0].DiskWriteMB
+
+		totalWrite := dockerStats[len(dockerStats)-1].DiskWriteMB - baselineWrite
+		totalRead := dockerStats[len(dockerStats)-1].DiskReadMB - baselineRead
 
 		for _, result := range dockerStats {
 			totalMemory += result.MemoryUsageMB
@@ -170,6 +183,10 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 				Average: averageMemory,
 				Min:     minMemory,
 				Max:     maxMemory,
+			},
+			DiskIO: DiskIOMetrics{
+				ReadMB:  totalRead,
+				WriteMB: totalWrite,
 			},
 		}
 	}

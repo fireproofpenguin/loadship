@@ -35,28 +35,32 @@ func Generate(data ReportData) ([]byte, error) {
 }
 
 type ReportData struct {
-	Summary  collector.Metrics
-	Metadata collector.TestConfig
-	Labels   []string
-	RPS      []float64
-	Errors   []float64
-	Latency  []float64
-	Memory   []float64
+	Summary     collector.Metrics
+	Metadata    collector.TestConfig
+	Labels      []string
+	RPS         []float64
+	Errors      []float64
+	Latency     []float64
+	Memory      []float64
+	DiskReadMB  []float64
+	DiskWriteMB []float64
 }
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
 	labels, rps, errors, latency := bucketHTTP(json.HTTPStats, json.Metadata.Timestamp)
 
-	memory := bucketDocker(json.DockerStats, json.Metadata.Timestamp)
+	memory, diskReadMB, diskWriteMB := bucketDocker(json.DockerStats, json.Metadata.Timestamp)
 
 	return ReportData{
-		Summary:  sanitiseSummary(json.Summary),
-		Metadata: json.Metadata,
-		Labels:   labels,
-		RPS:      rps,
-		Errors:   errors,
-		Latency:  latency,
-		Memory:   memory,
+		Summary:     sanitiseSummary(json.Summary),
+		Metadata:    json.Metadata,
+		Labels:      labels,
+		RPS:         rps,
+		Errors:      errors,
+		Latency:     latency,
+		Memory:      memory,
+		DiskReadMB:  diskReadMB,
+		DiskWriteMB: diskWriteMB,
 	}
 }
 
@@ -124,9 +128,11 @@ func bucketHTTP(stats []load.HTTPStats, testStart time.Time) ([]string, []float6
 	return labels, rps, errors, latency
 }
 
-func bucketDocker(stats []docker.DockerStats, testStart time.Time) []float64 {
+func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, []float64, []float64) {
 	type bucket struct {
 		memoryUsageMB float64
+		diskReadMB    float64
+		diskWriteMB   float64
 	}
 
 	buckets := make(map[int64]*bucket)
@@ -136,6 +142,8 @@ func bucketDocker(stats []docker.DockerStats, testStart time.Time) []float64 {
 
 		buckets[second] = &bucket{
 			memoryUsageMB: s.MemoryUsageMB,
+			diskReadMB:    s.DiskReadMB,
+			diskWriteMB:   s.DiskWriteMB,
 		}
 	}
 
@@ -147,10 +155,22 @@ func bucketDocker(stats []docker.DockerStats, testStart time.Time) []float64 {
 	slices.Sort(keys)
 
 	memoryUsage := make([]float64, len(keys))
+	diskReadMB := make([]float64, len(keys))
+	diskWriteMB := make([]float64, len(keys))
+
+	var previousReadMB, previousWriteMB float64
+	if len(stats) > 0 {
+		previousReadMB = buckets[0].diskReadMB
+		previousWriteMB = buckets[0].diskWriteMB
+	}
 
 	for i, k := range keys {
 		memoryUsage[i] = buckets[k].memoryUsageMB
+		diskReadMB[i] = buckets[k].diskReadMB - previousReadMB
+		diskWriteMB[i] = buckets[k].diskWriteMB - previousWriteMB
+		previousReadMB = buckets[k].diskReadMB
+		previousWriteMB = buckets[k].diskWriteMB
 	}
 
-	return memoryUsage
+	return memoryUsage, diskReadMB, diskWriteMB
 }

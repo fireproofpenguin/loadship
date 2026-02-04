@@ -14,6 +14,8 @@ import (
 type DockerStats struct {
 	Timestamp     time.Time `json:"timestamp"`
 	MemoryUsageMB float64   `json:"memory_usage_mb"`
+	DiskReadMB    float64   `json:"disk_read_mb"`
+	DiskWriteMB   float64   `json:"disk_write_mb"`
 }
 
 func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {
@@ -68,9 +70,24 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 
 		memoryMB := float64(workingSet) / 1024 / 1024
 
+		var diskReadBytes, diskWriteBytes uint64
+		for _, stat := range response.BlkioStats.IoServiceBytesRecursive {
+			switch stat.Op {
+			case "read":
+				diskReadBytes += stat.Value
+			case "write":
+				diskWriteBytes += stat.Value
+			}
+		}
+
+		diskReadMB := float64(diskReadBytes) / 1024 / 1024
+		diskWriteMB := float64(diskWriteBytes) / 1024 / 1024
+
 		stat := DockerStats{
 			Timestamp:     response.Read,
 			MemoryUsageMB: memoryMB,
+			DiskReadMB:    diskReadMB,
+			DiskWriteMB:   diskWriteMB,
 		}
 		results = append(results, stat)
 	}

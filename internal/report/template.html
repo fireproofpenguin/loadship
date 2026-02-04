@@ -83,6 +83,8 @@
         const errorData = {{.Errors}};
         const latency = {{.Latency}};
         const memory = {{.Memory}};
+        const diskReadMB = {{.DiskReadMB}};
+        const diskWriteMB = {{.DiskWriteMB}};
     </script>
 </head>
 
@@ -158,6 +160,9 @@
         <div class="chart-container">
           <canvas id="memoryChart"></canvas>
         </div>
+        <div class="chart-container">
+          <canvas id="diskChart"></canvas>
+        </div>
         {{end}}
         <script>
           const chartDefaults = {
@@ -226,6 +231,24 @@
                 label: "Memory (mb)",
                 data: memory,
                 borderColor: '#f5a623',
+                fill: false,
+              }]
+            }
+          })
+          new Chart(document.getElementById('diskChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Read (mb)",
+                data: diskReadMB,
+                borderColor: '#9013fe',
+                fill: false,
+              },
+                {
+                label: "Write (mb)",
+                data: diskWriteMB,
+                borderColor: '#f8e71c',
                 fill: false,
               }]
             }
