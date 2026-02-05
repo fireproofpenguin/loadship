@@ -86,6 +86,7 @@
         const cpu = {{.CPU}};
         const diskReadMB = {{.DiskReadMB}};
         const diskWriteMB = {{.DiskWriteMB}};
+        const pids = {{.PIDs}};
     </script>
 </head>
 
@@ -166,6 +167,9 @@
         </div>
         <div class="chart-container">
           <canvas id="diskChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="pidsChart"></canvas>
         </div>
         {{end}}
         <script>
@@ -265,6 +269,18 @@
                 label: "Write (mb)",
                 data: diskWriteMB,
                 borderColor: '#f8e71c',
+                fill: false,
+              }]
+            }
+          })
+          new Chart(document.getElementById('pidsChart'), {
+            ...chartDefaults,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "PIDs",
+                data: pids,
+                borderColor: '#bd10e0',
                 fill: false,
               }]
             }
