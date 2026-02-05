@@ -40,9 +40,21 @@ type MemoryMetrics struct {
 	Max     float64 `json:"max"`
 }
 
+type CPUMetrics struct {
+	Average float64 `json:"average"`
+	Peak    float64 `json:"peak"`
+}
+
+type DiskIOMetrics struct {
+	ReadMB  float64 `json:"disk_read_mb"`
+	WriteMB float64 `json:"disk_write_mb"`
+}
+
 type DockerMetrics struct {
 	collected bool
 	Memory    MemoryMetrics `json:"memory,omitempty"`
+	CPU       CPUMetrics    `json:"cpu,omitempty"`
+	DiskIO    DiskIOMetrics `json:"disk_io,omitempty"`
 }
 
 type Metrics struct {
@@ -67,6 +79,8 @@ func (m *Metrics) PrettyPrint() {
 		fmt.Printf("Average memory: %.2f MB\n", m.DockerMetrics.Memory.Average)
 		fmt.Printf("Min memory: %.2f MB\n", m.DockerMetrics.Memory.Min)
 		fmt.Printf("Max memory: %.2f MB\n", m.DockerMetrics.Memory.Max)
+		fmt.Printf("CPU:\tAverage: %.2f %%\tPeak: %.2f %%\n", m.DockerMetrics.CPU.Average, m.DockerMetrics.CPU.Peak)
+		fmt.Printf("DiskIO:\tRead: %.2f MB\tWrite: %.2f MB\n", m.DockerMetrics.DiskIO.ReadMB, m.DockerMetrics.DiskIO.WriteMB)
 	}
 }
 
@@ -140,17 +154,25 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 	// Docker metrics
 	if len(dockerStats) > 0 {
 		if runtime.GOOS == "windows" {
-			fmt.Println("Windows detected, cannot calculate CPU usage reliably - at this time!")
+			fmt.Println("Windows detected, cannot calculate CPU / DiskIO usage reliably - at this time!")
 		}
 
 		var (
 			totalMemory float64
 			minMemory   float64
 			maxMemory   float64
+			totalCPU    float64
+			peakCPU     float64
 		)
 
 		minMemory = dockerStats[0].MemoryUsageMB
 		maxMemory = dockerStats[0].MemoryUsageMB
+
+		baselineRead := dockerStats[0].DiskReadMB
+		baselineWrite := dockerStats[0].DiskWriteMB
+
+		totalWrite := dockerStats[len(dockerStats)-1].DiskWriteMB - baselineWrite
+		totalRead := dockerStats[len(dockerStats)-1].DiskReadMB - baselineRead
 
 		for _, result := range dockerStats {
 			totalMemory += result.MemoryUsageMB
@@ -160,9 +182,14 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 			if result.MemoryUsageMB > maxMemory {
 				maxMemory = result.MemoryUsageMB
 			}
+			totalCPU += result.CPUPercent
+			if result.CPUPercent > peakCPU {
+				peakCPU = result.CPUPercent
+			}
 		}
 
 		averageMemory := float64(totalMemory) / float64(len(dockerStats))
+		averageCPU := float64(totalCPU) / float64(len(dockerStats))
 
 		metrics.DockerMetrics = DockerMetrics{
 			collected: true,
@@ -170,6 +197,14 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 				Average: averageMemory,
 				Min:     minMemory,
 				Max:     maxMemory,
+			},
+			CPU: CPUMetrics{
+				Average: averageCPU,
+				Peak:    peakCPU,
+			},
+			DiskIO: DiskIOMetrics{
+				ReadMB:  totalRead,
+				WriteMB: totalWrite,
 			},
 		}
 	}

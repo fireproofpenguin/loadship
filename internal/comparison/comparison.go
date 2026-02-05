@@ -49,9 +49,15 @@ func (m MetricChange) ChangeString() string {
 	return fmt.Sprintf("%s%s (%s) %s", sign, deltaStr, percentStr, indicator)
 }
 
+type DockerChanges struct {
+	Memory []MetricChange
+	CPU    []MetricChange
+	DiskIO []MetricChange
+}
+
 type ComparisonReport struct {
 	HTTPChanges   []MetricChange
-	DockerChanges []MetricChange
+	DockerChanges DockerChanges
 }
 
 func (r *ComparisonReport) Print() {
@@ -64,12 +70,26 @@ func (r *ComparisonReport) Print() {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", change.Name, change.BaselineString(), change.TestString(), change.ChangeString())
 	}
 
-	if len(r.DockerChanges) > 0 {
+	if len(r.DockerChanges.Memory) > 0 {
 		fmt.Fprintln(w, "\n=== Docker Metrics ===")
 
 		fmt.Fprintln(w, "Memory\tBaseline\tTest\tChange")
 		fmt.Fprintln(w, "------\t------\t------\t------")
-		for _, change := range r.DockerChanges {
+		for _, change := range r.DockerChanges.Memory {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", change.Name, change.BaselineString(), change.TestString(), change.ChangeString())
+		}
+
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "CPU\tBaseline\tTest\tChange")
+		fmt.Fprintln(w, "------\t------\t------\t------")
+		for _, change := range r.DockerChanges.CPU {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", change.Name, change.BaselineString(), change.TestString(), change.ChangeString())
+		}
+
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Disk Op\tBaseline\tTest\tChange")
+		fmt.Fprintln(w, "------\t------\t------\t------")
+		for _, change := range r.DockerChanges.DiskIO {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", change.Name, change.BaselineString(), change.TestString(), change.ChangeString())
 		}
 	}
@@ -81,13 +101,21 @@ func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
 	baselineHasDockerMetrics := len(baseline.DockerStats) > 0
 	testHasDockerMetrics := len(test.DockerStats) > 0
 
-	var dockerChanges []MetricChange
+	var memoryChanges, cpuChanges, diskIOChanges []MetricChange
 
 	if baselineHasDockerMetrics && testHasDockerMetrics {
-		dockerChanges = []MetricChange{
+		memoryChanges = []MetricChange{
 			CalculateMetricChange("Average Memory (MB)", baseline.Summary.DockerMetrics.Memory.Average, test.Summary.DockerMetrics.Memory.Average, true, "%.2f"),
 			CalculateMetricChange("Min Memory (MB)", baseline.Summary.DockerMetrics.Memory.Min, test.Summary.DockerMetrics.Memory.Min, true, "%.2f"),
 			CalculateMetricChange("Max Memory (MB)", baseline.Summary.DockerMetrics.Memory.Max, test.Summary.DockerMetrics.Memory.Max, true, "%.2f"),
+		}
+		cpuChanges = []MetricChange{
+			CalculateMetricChange("Average CPU (%)", baseline.Summary.DockerMetrics.CPU.Average, test.Summary.DockerMetrics.CPU.Average, true, "%.2f"),
+			CalculateMetricChange("Peak CPU (%)", baseline.Summary.DockerMetrics.CPU.Peak, test.Summary.DockerMetrics.CPU.Peak, true, "%.2f"),
+		}
+		diskIOChanges = []MetricChange{
+			CalculateMetricChange("Read (MB)", baseline.Summary.DockerMetrics.DiskIO.ReadMB, test.Summary.DockerMetrics.DiskIO.ReadMB, true, "%.2f"),
+			CalculateMetricChange("Write (MB)", baseline.Summary.DockerMetrics.DiskIO.WriteMB, test.Summary.DockerMetrics.DiskIO.WriteMB, true, "%.2f"),
 		}
 	} else if baselineHasDockerMetrics || testHasDockerMetrics {
 		fmt.Println("Warning: Only one of the test results contains Docker metrics. Docker metrics will be skipped in the comparison.")
@@ -104,7 +132,11 @@ func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
 			CalculateMetricChange("Latency (p95)", float64(baseline.Summary.HTTPMetrics.Latency.P95), float64(test.Summary.HTTPMetrics.Latency.P95), true, "%.0f"),
 			CalculateMetricChange("Latency (p99)", float64(baseline.Summary.HTTPMetrics.Latency.P99), float64(test.Summary.HTTPMetrics.Latency.P99), true, "%.0f"),
 		},
-		DockerChanges: dockerChanges,
+		DockerChanges: DockerChanges{
+			Memory: memoryChanges,
+			CPU:    cpuChanges,
+			DiskIO: diskIOChanges,
+		},
 	}
 }
 

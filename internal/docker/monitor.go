@@ -14,6 +14,9 @@ import (
 type DockerStats struct {
 	Timestamp     time.Time `json:"timestamp"`
 	MemoryUsageMB float64   `json:"memory_usage_mb"`
+	CPUPercent    float64   `json:"cpu_percent"`
+	DiskReadMB    float64   `json:"disk_read_mb"`
+	DiskWriteMB   float64   `json:"disk_write_mb"`
 }
 
 func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {
@@ -44,6 +47,7 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 
 	decoder := json.NewDecoder(stats.Body)
 
+	var prevCPU, prevSystem uint64
 	for {
 		if ctx.Err() != nil {
 			dockerCtxCancel()
@@ -68,9 +72,35 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 
 		memoryMB := float64(workingSet) / 1024 / 1024
 
+		cpuDelta := float64(response.CPUStats.CPUUsage.TotalUsage - prevCPU)
+		systemDelta := float64(response.CPUStats.SystemUsage - prevSystem)
+		prevCPU = response.CPUStats.CPUUsage.TotalUsage
+		prevSystem = response.CPUStats.SystemUsage
+
+		var cpuPercent float64
+		if systemDelta > 0 && cpuDelta > 0 {
+			cpuPercent = (cpuDelta / systemDelta) * float64(response.CPUStats.OnlineCPUs) * 100.0
+		}
+
+		var diskReadBytes, diskWriteBytes uint64
+		for _, stat := range response.BlkioStats.IoServiceBytesRecursive {
+			switch stat.Op {
+			case "read":
+				diskReadBytes += stat.Value
+			case "write":
+				diskWriteBytes += stat.Value
+			}
+		}
+
+		diskReadMB := float64(diskReadBytes) / 1024 / 1024
+		diskWriteMB := float64(diskWriteBytes) / 1024 / 1024
+
 		stat := DockerStats{
 			Timestamp:     response.Read,
 			MemoryUsageMB: memoryMB,
+			CPUPercent:    cpuPercent,
+			DiskReadMB:    diskReadMB,
+			DiskWriteMB:   diskWriteMB,
 		}
 		results = append(results, stat)
 	}
