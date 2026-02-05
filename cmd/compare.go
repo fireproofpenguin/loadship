@@ -57,7 +57,7 @@ Example usage: loadship compare baseline.json test1.json`,
 			if i == 0 {
 				fmt.Printf("Baseline: %s (%v)\n", file, outputs[i].Metadata.Timestamp)
 			} else {
-				fmt.Printf("Test %d: %s (%v)\n", i-1, file, outputs[i].Metadata.Timestamp)
+				fmt.Printf("Test %d: %s (%v)\n", i, file, outputs[i].Metadata.Timestamp)
 			}
 		}
 
