@@ -67,6 +67,7 @@ Example usage: loadship compare baseline.json test1.json`,
 			if !baseline.Metadata.IsSimilar(test.Metadata) {
 				if !hasPrintedWarning {
 					fmt.Println("\n=== Warning! ===")
+					hasPrintedWarning = true
 				}
 				fmt.Printf("%s does not have similar config to baseline - comparison results may not be valid.\n", args[i+1])
 			}
