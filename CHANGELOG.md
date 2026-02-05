@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/fireproofpenguin/loadship/compare/v0.4.0...v0.5.0) (2026-02-05)
+
+
+### Features
+
+* add version flag ([#16](https://github.com/fireproofpenguin/loadship/issues/16)) ([fcf79a9](https://github.com/fireproofpenguin/loadship/commit/fcf79a977ab51e49e5af71dbf8d3cf4c6b1d0181))
+* docker cpu and disk stats ([#18](https://github.com/fireproofpenguin/loadship/issues/18)) ([64afebf](https://github.com/fireproofpenguin/loadship/commit/64afebf5c4281edfca508be277eb07b834a1b647))
+
 ## [0.4.0](https://github.com/fireproofpenguin/loadship/compare/v0.3.0...v0.4.0) (2026-02-04)
 
 
