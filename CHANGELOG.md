@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/fireproofpenguin/loadship/compare/v0.5.0...v0.6.0) (2026-02-05)
+
+
+### Features
+
+* add pid tracking ([#21](https://github.com/fireproofpenguin/loadship/issues/21)) ([8bec4ee](https://github.com/fireproofpenguin/loadship/commit/8bec4eea78a855e41e82b4ca6996a62496ce53a6))
+* compare multiple runs at once ([#19](https://github.com/fireproofpenguin/loadship/issues/19)) ([489c33f](https://github.com/fireproofpenguin/loadship/commit/489c33fd356e9b9674823f573e40e8d6031f1526))
+
 ## [0.5.0](https://github.com/fireproofpenguin/loadship/compare/v0.4.0...v0.5.0) (2026-02-05)
 
 
