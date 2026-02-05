@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -14,76 +13,68 @@ import (
 var compareCmd = &cobra.Command{
 	Use:   "compare",
 	Short: "Compare test results",
-	Long:  `Compare 2 test results and show the differences.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Long: `Compare multiple test results and show the differences.
+
+Example usage: loadship compare baseline.json test1.json`,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			fmt.Println("Please provide two test result files to compare")
-			return
+			return fmt.Errorf("Please provide at least two test result files to compare")
 		}
 
-		file1 := args[0]
+		filenames := make(map[string]bool)
+		for _, arg := range args {
+			if filepath.Ext(arg) != ".json" {
+				return fmt.Errorf("All files must be JSON files with .json extension: %s", arg)
+			}
 
-		file2 := args[1]
+			if filenames[arg] {
+				return fmt.Errorf("Duplicate file provided: %s. Please provide different test result files to compare", arg)
+			}
 
-		if file1 == file2 {
-			fmt.Println("Please provide two different test result files to compare")
-			return
+			filenames[arg] = true
 		}
 
-		file1Path, err := filepath.Abs(file1)
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 
-		if err != nil {
-			fmt.Println("Error getting absolute path for file 1:", err)
-			return
+		var outputs []*collector.JSONOutput
+		for _, arg := range args {
+			b, err := os.ReadFile(arg)
+			if err != nil {
+				return fmt.Errorf("Error reading file: %v\n", err)
+			}
+			jsonOutput, err := collector.ReadFromJSON(b)
+			if err != nil {
+				return fmt.Errorf("Error parsing JSON from file: %v\n", err)
+			}
+			outputs = append(outputs, jsonOutput)
 		}
 
-		file2Path, err := filepath.Abs(file2)
-		if err != nil {
-			fmt.Println("Error getting absolute path for file 2:", err)
-			return
-		}
-
-		if filepath.Ext(file2Path) != ".json" || filepath.Ext(file1Path) != ".json" {
-			fmt.Println("Both files must be JSON files with .json extension")
-			return
-		}
-
-		b, err := os.ReadFile(file1Path)
-
-		if err != nil {
-			log.Fatalf("Error reading file: %v\n", err)
-		}
-
-		baseline, err := collector.ReadFromJSON(b)
-
-		if err != nil {
-			log.Fatalf("Error parsing JSON from file: %v\n", err)
-		}
-
-		b, err = os.ReadFile(file2Path)
-
-		if err != nil {
-			log.Fatalf("Error reading file: %v\n", err)
-		}
-
-		test, err := collector.ReadFromJSON(b)
-
-		if err != nil {
-			log.Fatalf("Error parsing JSON from file: %v\n", err)
-		}
-
-		comparison := comparison.Compare(baseline, test)
-
+		comparisons := comparison.Compare(outputs)
 		fmt.Println("=== Comparing Test Results ===")
-		fmt.Printf("Baseline: %s (%v)\n", file1, baseline.Metadata.Timestamp)
-		fmt.Printf("Test: %s (%v)\n", file2, test.Metadata.Timestamp)
-
-		if !baseline.Metadata.IsSimilar(test.Metadata) {
-			fmt.Println("\n=== Warning ===")
-			fmt.Println("The two test configurations are not similar. Comparison results may not be valid.")
+		for i, file := range args {
+			if i == 0 {
+				fmt.Printf("Baseline: %s (%v)\n", file, outputs[i].Metadata.Timestamp)
+			} else {
+				fmt.Printf("Test %d: %s (%v)\n", i, file, outputs[i].Metadata.Timestamp)
+			}
 		}
 
-		comparison.Print()
+		var hasPrintedWarning bool
+		baseline := outputs[0]
+		for i, test := range outputs[1:] {
+			if !baseline.Metadata.IsSimilar(test.Metadata) {
+				if !hasPrintedWarning {
+					fmt.Println("\n=== Warning! ===")
+					hasPrintedWarning = true
+				}
+				fmt.Printf("%s does not have similar config to baseline - comparison results may not be valid.\n", args[i+1])
+			}
+		}
+
+		comparison.PrintComparisonReports(outputs[0], comparisons)
+		return nil
 	},
 }
 
