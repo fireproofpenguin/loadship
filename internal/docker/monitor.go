@@ -17,6 +17,7 @@ type DockerStats struct {
 	CPUPercent    float64   `json:"cpu_percent"`
 	DiskReadMB    float64   `json:"disk_read_mb"`
 	DiskWriteMB   float64   `json:"disk_write_mb"`
+	PIDs          uint64    `json:"pids"`
 }
 
 func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, error) {
@@ -101,6 +102,7 @@ func RunDockerMonitor(ctx context.Context, container string) ([]DockerStats, err
 			CPUPercent:    cpuPercent,
 			DiskReadMB:    diskReadMB,
 			DiskWriteMB:   diskWriteMB,
+			PIDs:          response.PidsStats.Current,
 		}
 		results = append(results, stat)
 	}

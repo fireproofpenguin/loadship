@@ -50,11 +50,17 @@ type DiskIOMetrics struct {
 	WriteMB float64 `json:"disk_write_mb"`
 }
 
+type PIDMetrics struct {
+	Average float64 `json:"average"`
+	Peak    float64 `json:"peak"`
+}
+
 type DockerMetrics struct {
 	collected bool
 	Memory    MemoryMetrics `json:"memory,omitempty"`
 	CPU       CPUMetrics    `json:"cpu,omitempty"`
 	DiskIO    DiskIOMetrics `json:"disk_io,omitempty"`
+	PIDs      PIDMetrics    `json:"pids,omitempty"`
 }
 
 type Metrics struct {
@@ -81,6 +87,7 @@ func (m *Metrics) PrettyPrint() {
 		fmt.Printf("Max memory: %.2f MB\n", m.DockerMetrics.Memory.Max)
 		fmt.Printf("CPU:\tAverage: %.2f %%\tPeak: %.2f %%\n", m.DockerMetrics.CPU.Average, m.DockerMetrics.CPU.Peak)
 		fmt.Printf("DiskIO:\tRead: %.2f MB\tWrite: %.2f MB\n", m.DockerMetrics.DiskIO.ReadMB, m.DockerMetrics.DiskIO.WriteMB)
+		fmt.Printf("PIDs:\tAverage: %.0f\tPeak: %.0f\n", m.DockerMetrics.PIDs.Average, m.DockerMetrics.PIDs.Peak)
 	}
 }
 
@@ -163,6 +170,8 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 			maxMemory   float64
 			totalCPU    float64
 			peakCPU     float64
+			totalPids   float64
+			peakPids    float64
 		)
 
 		minMemory = dockerStats[0].MemoryUsageMB
@@ -186,10 +195,15 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 			if result.CPUPercent > peakCPU {
 				peakCPU = result.CPUPercent
 			}
+			totalPids += float64(result.PIDs)
+			if float64(result.PIDs) > peakPids {
+				peakPids = float64(result.PIDs)
+			}
 		}
 
 		averageMemory := float64(totalMemory) / float64(len(dockerStats))
 		averageCPU := float64(totalCPU) / float64(len(dockerStats))
+		averagePids := totalPids / float64(len(dockerStats))
 
 		metrics.DockerMetrics = DockerMetrics{
 			collected: true,
@@ -205,6 +219,10 @@ func Calculate(httpStats []load.HTTPStats, dockerStats []docker.DockerStats, dur
 			DiskIO: DiskIOMetrics{
 				ReadMB:  totalRead,
 				WriteMB: totalWrite,
+			},
+			PIDs: PIDMetrics{
+				Average: averagePids,
+				Peak:    peakPids,
 			},
 		}
 	}

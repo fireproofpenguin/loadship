@@ -53,6 +53,7 @@ type DockerChanges struct {
 	Memory []MetricChange
 	CPU    []MetricChange
 	DiskIO []MetricChange
+	PIDs   []MetricChange
 }
 
 type ComparisonReport struct {
@@ -162,7 +163,7 @@ func Compare(outputs []*collector.JSONOutput) []*ComparisonReport {
 		baselineHasDockerMetrics := len(baseline.DockerStats) > 0
 		testHasDockerMetrics := len(test.DockerStats) > 0
 
-		var memoryChanges, cpuChanges, diskIOChanges []MetricChange
+		var memoryChanges, cpuChanges, diskIOChanges, pidChanges []MetricChange
 
 		if baselineHasDockerMetrics && testHasDockerMetrics {
 			memoryChanges = []MetricChange{
@@ -177,6 +178,10 @@ func Compare(outputs []*collector.JSONOutput) []*ComparisonReport {
 			diskIOChanges = []MetricChange{
 				CalculateMetricChange("Read (MB)", baseline.Summary.DockerMetrics.DiskIO.ReadMB, test.Summary.DockerMetrics.DiskIO.ReadMB, true, "%.2f"),
 				CalculateMetricChange("Write (MB)", baseline.Summary.DockerMetrics.DiskIO.WriteMB, test.Summary.DockerMetrics.DiskIO.WriteMB, true, "%.2f"),
+			}
+			pidChanges = []MetricChange{
+				CalculateMetricChange("Average PIDs", baseline.Summary.DockerMetrics.PIDs.Average, test.Summary.DockerMetrics.PIDs.Average, true, "%.2f"),
+				CalculateMetricChange("Peak PIDs", baseline.Summary.DockerMetrics.PIDs.Peak, test.Summary.DockerMetrics.PIDs.Peak, true, "%.0f"),
 			}
 		} else if baselineHasDockerMetrics || testHasDockerMetrics {
 			fmt.Println("Warning: Only one of the test results contains Docker metrics. Docker metrics will be skipped in the comparison.")
@@ -197,6 +202,7 @@ func Compare(outputs []*collector.JSONOutput) []*ComparisonReport {
 				Memory: memoryChanges,
 				CPU:    cpuChanges,
 				DiskIO: diskIOChanges,
+				PIDs:   pidChanges,
 			},
 		}
 
@@ -259,6 +265,8 @@ func PrintComparisonReports(baseline *collector.JSONOutput, reports []*Compariso
 		printMetricSection(w, reports, func(r *ComparisonReport) []MetricChange { return r.DockerChanges.DiskIO })
 
 		fmt.Fprintln(w)
+		fmt.Fprintln(w, "PIDs")
+		printMetricSection(w, reports, func(r *ComparisonReport) []MetricChange { return r.DockerChanges.PIDs })
 	}
 
 	w.Flush()

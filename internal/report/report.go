@@ -45,12 +45,13 @@ type ReportData struct {
 	CPU         []float64
 	DiskReadMB  []float64
 	DiskWriteMB []float64
+	PIDs        []uint64
 }
 
 func CreateReportData(json *collector.JSONOutput) ReportData {
 	labels, rps, errors, latency := bucketHTTP(json.HTTPStats, json.Metadata.Timestamp)
 
-	memory, cpu, diskReadMB, diskWriteMB := bucketDocker(json.DockerStats, json.Metadata.Timestamp)
+	memory, cpu, diskReadMB, diskWriteMB, pids := bucketDocker(json.DockerStats, json.Metadata.Timestamp)
 
 	return ReportData{
 		Summary:     sanitiseSummary(json.Summary),
@@ -63,6 +64,7 @@ func CreateReportData(json *collector.JSONOutput) ReportData {
 		CPU:         cpu,
 		DiskReadMB:  diskReadMB,
 		DiskWriteMB: diskWriteMB,
+		PIDs:        pids,
 	}
 }
 
@@ -130,12 +132,13 @@ func bucketHTTP(stats []load.HTTPStats, testStart time.Time) ([]string, []float6
 	return labels, rps, errors, latency
 }
 
-func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, []float64, []float64, []float64) {
+func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, []float64, []float64, []float64, []uint64) {
 	type bucket struct {
 		memoryUsageMB float64
 		cpuPercent    float64
 		diskReadMB    float64
 		diskWriteMB   float64
+		pids          uint64
 	}
 
 	buckets := make(map[int64]*bucket)
@@ -148,6 +151,7 @@ func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, [
 			cpuPercent:    s.CPUPercent,
 			diskReadMB:    s.DiskReadMB,
 			diskWriteMB:   s.DiskWriteMB,
+			pids:          s.PIDs,
 		}
 	}
 
@@ -162,6 +166,7 @@ func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, [
 	cpuPercent := make([]float64, len(keys))
 	diskReadMB := make([]float64, len(keys))
 	diskWriteMB := make([]float64, len(keys))
+	pids := make([]uint64, len(keys))
 
 	var previousReadMB, previousWriteMB float64
 	if len(keys) > 0 {
@@ -176,7 +181,8 @@ func bucketDocker(stats []docker.DockerStats, testStart time.Time) ([]float64, [
 		diskWriteMB[i] = buckets[k].diskWriteMB - previousWriteMB
 		previousReadMB = buckets[k].diskReadMB
 		previousWriteMB = buckets[k].diskWriteMB
+		pids[i] = buckets[k].pids
 	}
 
-	return memoryUsage, cpuPercent, diskReadMB, diskWriteMB
+	return memoryUsage, cpuPercent, diskReadMB, diskWriteMB, pids
 }
