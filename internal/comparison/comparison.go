@@ -97,47 +97,113 @@ func (r *ComparisonReport) Print() {
 	w.Flush()
 }
 
-func Compare(baseline, test *collector.JSONOutput) *ComparisonReport {
-	baselineHasDockerMetrics := len(baseline.DockerStats) > 0
-	testHasDockerMetrics := len(test.DockerStats) > 0
-
-	var memoryChanges, cpuChanges, diskIOChanges []MetricChange
-
-	if baselineHasDockerMetrics && testHasDockerMetrics {
-		memoryChanges = []MetricChange{
-			CalculateMetricChange("Average Memory (MB)", baseline.Summary.DockerMetrics.Memory.Average, test.Summary.DockerMetrics.Memory.Average, true, "%.2f"),
-			CalculateMetricChange("Min Memory (MB)", baseline.Summary.DockerMetrics.Memory.Min, test.Summary.DockerMetrics.Memory.Min, true, "%.2f"),
-			CalculateMetricChange("Max Memory (MB)", baseline.Summary.DockerMetrics.Memory.Max, test.Summary.DockerMetrics.Memory.Max, true, "%.2f"),
-		}
-		cpuChanges = []MetricChange{
-			CalculateMetricChange("Average CPU (%)", baseline.Summary.DockerMetrics.CPU.Average, test.Summary.DockerMetrics.CPU.Average, true, "%.2f"),
-			CalculateMetricChange("Peak CPU (%)", baseline.Summary.DockerMetrics.CPU.Peak, test.Summary.DockerMetrics.CPU.Peak, true, "%.2f"),
-		}
-		diskIOChanges = []MetricChange{
-			CalculateMetricChange("Read (MB)", baseline.Summary.DockerMetrics.DiskIO.ReadMB, test.Summary.DockerMetrics.DiskIO.ReadMB, true, "%.2f"),
-			CalculateMetricChange("Write (MB)", baseline.Summary.DockerMetrics.DiskIO.WriteMB, test.Summary.DockerMetrics.DiskIO.WriteMB, true, "%.2f"),
-		}
-	} else if baselineHasDockerMetrics || testHasDockerMetrics {
-		fmt.Println("Warning: Only one of the test results contains Docker metrics. Docker metrics will be skipped in the comparison.")
+// printMetricSection prints a table of metrics using the provided metric extractor function
+func printMetricSection(w *tabwriter.Writer, reports []*ComparisonReport, getMetrics func(*ComparisonReport) []MetricChange) {
+	if len(reports) == 0 {
+		return
 	}
 
-	return &ComparisonReport{
-		HTTPChanges: []MetricChange{
-			CalculateMetricChange("Total Requests", float64(baseline.Summary.HTTPMetrics.Requests.Total), float64(test.Summary.HTTPMetrics.Requests.Total), false, "%.0f"),
-			CalculateMetricChange("Failed Requests", float64(baseline.Summary.HTTPMetrics.Requests.Failed), float64(test.Summary.HTTPMetrics.Requests.Failed), true, "%.0f"),
-			CalculateMetricChange("RPS", baseline.Summary.HTTPMetrics.Requests.Rps, test.Summary.HTTPMetrics.Requests.Rps, false, "%.2f"),
-			CalculateMetricChange("Latency (Avg)", float64(baseline.Summary.HTTPMetrics.Latency.Average), float64(test.Summary.HTTPMetrics.Latency.Average), true, "%.0f"),
-			CalculateMetricChange("Latency (p50)", float64(baseline.Summary.HTTPMetrics.Latency.P50), float64(test.Summary.HTTPMetrics.Latency.P50), true, "%.0f"),
-			CalculateMetricChange("Latency (p90)", float64(baseline.Summary.HTTPMetrics.Latency.P90), float64(test.Summary.HTTPMetrics.Latency.P90), true, "%.0f"),
-			CalculateMetricChange("Latency (p95)", float64(baseline.Summary.HTTPMetrics.Latency.P95), float64(test.Summary.HTTPMetrics.Latency.P95), true, "%.0f"),
-			CalculateMetricChange("Latency (p99)", float64(baseline.Summary.HTTPMetrics.Latency.P99), float64(test.Summary.HTTPMetrics.Latency.P99), true, "%.0f"),
-		},
-		DockerChanges: DockerChanges{
-			Memory: memoryChanges,
-			CPU:    cpuChanges,
-			DiskIO: diskIOChanges,
-		},
+	// Build header
+	header := "Metric\tBaseline"
+	separator := "------\t--------"
+	for i := range reports {
+		header += fmt.Sprintf("\tTest %d (Change)", i+1)
+		separator += "\t---------------"
 	}
+	fmt.Fprintln(w, header)
+	fmt.Fprintln(w, separator)
+
+	// Build lookup maps for each report for O(1) access
+	reportMaps := make([]map[string]MetricChange, len(reports))
+	for i, report := range reports {
+		reportMaps[i] = make(map[string]MetricChange)
+		for _, metric := range getMetrics(report) {
+			reportMaps[i][metric.Name] = metric
+		}
+	}
+
+	// Get all unique metric names from the first report
+	firstReportMetrics := getMetrics(reports[0])
+	for _, metric := range firstReportMetrics {
+		metricName := metric.Name
+		row := fmt.Sprintf("%s\t%s", metricName, metric.BaselineString())
+
+		// Add test results for this metric
+		for _, reportMap := range reportMaps {
+			if change, exists := reportMap[metricName]; exists {
+				row += fmt.Sprintf("\t%s (%s)", change.TestString(), change.ChangeString())
+			} else {
+				row += "\tn/a (n/a)"
+			}
+		}
+		fmt.Fprintln(w, row)
+	}
+}
+
+// hasDockerMetrics checks if any report contains Docker metrics
+func hasDockerMetrics(reports []*ComparisonReport) bool {
+	for _, report := range reports {
+		if len(report.DockerChanges.Memory) > 0 ||
+			len(report.DockerChanges.CPU) > 0 ||
+			len(report.DockerChanges.DiskIO) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func Compare(outputs []*collector.JSONOutput) []*ComparisonReport {
+	baseline := outputs[0]
+	tests := outputs[1:]
+
+	var reports []*ComparisonReport
+
+	for _, test := range tests {
+		baselineHasDockerMetrics := len(baseline.DockerStats) > 0
+		testHasDockerMetrics := len(test.DockerStats) > 0
+
+		var memoryChanges, cpuChanges, diskIOChanges []MetricChange
+
+		if baselineHasDockerMetrics && testHasDockerMetrics {
+			memoryChanges = []MetricChange{
+				CalculateMetricChange("Average Memory (MB)", baseline.Summary.DockerMetrics.Memory.Average, test.Summary.DockerMetrics.Memory.Average, true, "%.2f"),
+				CalculateMetricChange("Min Memory (MB)", baseline.Summary.DockerMetrics.Memory.Min, test.Summary.DockerMetrics.Memory.Min, true, "%.2f"),
+				CalculateMetricChange("Max Memory (MB)", baseline.Summary.DockerMetrics.Memory.Max, test.Summary.DockerMetrics.Memory.Max, true, "%.2f"),
+			}
+			cpuChanges = []MetricChange{
+				CalculateMetricChange("Average CPU (%)", baseline.Summary.DockerMetrics.CPU.Average, test.Summary.DockerMetrics.CPU.Average, true, "%.2f"),
+				CalculateMetricChange("Peak CPU (%)", baseline.Summary.DockerMetrics.CPU.Peak, test.Summary.DockerMetrics.CPU.Peak, true, "%.2f"),
+			}
+			diskIOChanges = []MetricChange{
+				CalculateMetricChange("Read (MB)", baseline.Summary.DockerMetrics.DiskIO.ReadMB, test.Summary.DockerMetrics.DiskIO.ReadMB, true, "%.2f"),
+				CalculateMetricChange("Write (MB)", baseline.Summary.DockerMetrics.DiskIO.WriteMB, test.Summary.DockerMetrics.DiskIO.WriteMB, true, "%.2f"),
+			}
+		} else if baselineHasDockerMetrics || testHasDockerMetrics {
+			fmt.Println("Warning: Only one of the test results contains Docker metrics. Docker metrics will be skipped in the comparison.")
+		}
+
+		report := &ComparisonReport{
+			HTTPChanges: []MetricChange{
+				CalculateMetricChange("Total Requests", float64(baseline.Summary.HTTPMetrics.Requests.Total), float64(test.Summary.HTTPMetrics.Requests.Total), false, "%.0f"),
+				CalculateMetricChange("Failed Requests", float64(baseline.Summary.HTTPMetrics.Requests.Failed), float64(test.Summary.HTTPMetrics.Requests.Failed), true, "%.0f"),
+				CalculateMetricChange("RPS", baseline.Summary.HTTPMetrics.Requests.Rps, test.Summary.HTTPMetrics.Requests.Rps, false, "%.2f"),
+				CalculateMetricChange("Latency (Avg)", float64(baseline.Summary.HTTPMetrics.Latency.Average), float64(test.Summary.HTTPMetrics.Latency.Average), true, "%.0f"),
+				CalculateMetricChange("Latency (p50)", float64(baseline.Summary.HTTPMetrics.Latency.P50), float64(test.Summary.HTTPMetrics.Latency.P50), true, "%.0f"),
+				CalculateMetricChange("Latency (p90)", float64(baseline.Summary.HTTPMetrics.Latency.P90), float64(test.Summary.HTTPMetrics.Latency.P90), true, "%.0f"),
+				CalculateMetricChange("Latency (p95)", float64(baseline.Summary.HTTPMetrics.Latency.P95), float64(test.Summary.HTTPMetrics.Latency.P95), true, "%.0f"),
+				CalculateMetricChange("Latency (p99)", float64(baseline.Summary.HTTPMetrics.Latency.P99), float64(test.Summary.HTTPMetrics.Latency.P99), true, "%.0f"),
+			},
+			DockerChanges: DockerChanges{
+				Memory: memoryChanges,
+				CPU:    cpuChanges,
+				DiskIO: diskIOChanges,
+			},
+		}
+
+		reports = append(reports, report)
+	}
+
+	return reports
 }
 
 func CalculateMetricChange(name string, baseline, test float64, lowerIsBetter bool, format string) MetricChange {
@@ -164,4 +230,36 @@ func CalculateMetricChange(name string, baseline, test float64, lowerIsBetter bo
 		Better:   better,
 		Format:   format,
 	}
+}
+
+func PrintComparisonReports(baseline *collector.JSONOutput, reports []*ComparisonReport) {
+	if len(reports) == 0 {
+		fmt.Println("No comparison reports to display")
+		return
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
+
+	// Print HTTP metrics
+	fmt.Println("\n=== HTTP Metrics ===")
+	printMetricSection(w, reports, func(r *ComparisonReport) []MetricChange { return r.HTTPChanges })
+
+	// Print Docker metrics if available
+	if hasDockerMetrics(reports) {
+		fmt.Fprintln(w, "\n=== Docker Metrics ===")
+		fmt.Fprintln(w, "Memory")
+		printMetricSection(w, reports, func(r *ComparisonReport) []MetricChange { return r.DockerChanges.Memory })
+
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "CPU")
+		printMetricSection(w, reports, func(r *ComparisonReport) []MetricChange { return r.DockerChanges.CPU })
+
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Disk I/O")
+		printMetricSection(w, reports, func(r *ComparisonReport) []MetricChange { return r.DockerChanges.DiskIO })
+
+		fmt.Fprintln(w)
+	}
+
+	w.Flush()
 }
